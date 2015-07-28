@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#website define
 UNSUPPORT = None
 YOUKU = 'youku'
 YOUTUBE = 'youtube'
@@ -26,7 +27,8 @@ TANGDOU = 'tangdou'
 V1 = 'v1'
 WASU = 'wasu'
 ZHANQI = 'zhanqi'
-
-VIDEO_WEBSITE = {
-
-}
+#-------------------------
+#error define
+E_URL_NONE = 0
+E_IMPORT_ERROR = 1
+E_DOWNLOAD_SUCCESS = 99

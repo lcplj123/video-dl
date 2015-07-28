@@ -6,9 +6,6 @@ from condition import Condition
 from dispatch import Dispatcher
 from errorcode import *
 
-def main():
-	pass
-
 if __name__ == '__main__':
 	[...]
 	parser = OptionParser()
@@ -26,13 +23,14 @@ if __name__ == '__main__':
 	parser.add_option('-t','--sockettimeout',action = 'store',type = 'int',dest = 'sockettimeout',default = 15,help = 'socket time out in seconds. default is 15.')
 	parser.add_option('-l','--downloaddir',action = 'store',type = 'string',dest = 'downloaddir',default = '.',help = 'directory to download video.if start with . ,means relative path else start with / ,means absolute path. default is . .')
 	parser.add_option('-f','--downloadname',action = 'store',type = 'string',dest = 'downloadname',default = 'vid',help = 'how to name the video file. vid and title. default is vid. ')
-	parser.add_option('-d',action = 'store_true',dest = 'debug',default = False,help = 'open debug mode.')
+	parser.add_option('-d',action = 'store_true',dest = 'debug',default = True,help = 'open debug mode.')
 	parser.add_option('-o',action = 'store_true',dest = 'force',default = False,help = 'overwrite the existing file.default is False.')
 	options,args = parser.parse_args()
 	url = options.__dict__.get('url')
-	if url is None or len(url) == 0:
-		#print('error: video url is None! exit...')
-
-		sys.exit(0)
 	c = Condition(**options.__dict__)
-	return Dispatcher(c)
+	if url is None or len(url) == 0:
+		if c.debug or c.verbose:
+			print('error: video url is None! exit...')
+			sys.exit()
+
+	Dispatcher(c)
