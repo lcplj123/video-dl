@@ -3,6 +3,7 @@ import gzip
 import zlib
 from define import *
 import urllib.request
+import urllib.parse
 import platform
 
 def get_video_website(url):
@@ -68,6 +69,13 @@ def get_video_website(url):
 	else:
 		return UNSUPPORT
 
+def get_urlencode(kwargs):
+	'''
+	将传入的参数编码
+	'''
+	t = urllib.parse.urlencode(kwargs)
+	return t
+
 basic_header = {
 	'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 	'Accept-Encoding':'gzip,deflate',
@@ -105,8 +113,10 @@ def get_html(url):
 		content = content.decode('gbk')
 	elif charset.find('javascript') != -1:
 		content = content.decode('utf-8')
-	else:
+	else: #默认也是用utf-8解码
 		print('xxxxxxxxxxxxxxxxx 未知编码',charset)
+		content = content.decode('utf-8')
+
 
 	return content
 
@@ -134,15 +144,17 @@ def get_html(url):
 	#print('Pragma ',resp.getheader('Pragma'))
 
 def getIP(ifname = 'eth0'):
+	print(platform.system())
 	if platform.system() == 'Linux':
-		import socket
-		import fcntl
-		import struct
-		def get_ip_addr(ifname = 'eth0'):
-		sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-		pktString = fcntl.ioctl(sock.fileno(), 0x8915, struct.pack(b'256s', ifname[:15].encode('utf-8')))
-		ipString  = socket.inet_ntoa(pktString[20:24])
-		return ipString
+		pass
+	#	import socket
+	#	import fcntl
+	#	import struct
+	#	def get_ip_addr(ifname = 'eth0'):
+	#	sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+	#	pktString = fcntl.ioctl(sock.fileno(), 0x8915, struct.pack(b'256s', ifname[:15].encode('utf-8')))
+	#	ipString  = socket.inet_ntoa(pktString[20:24])
+	#	return ipString
 	elif platform.system() == 'Windows':
 		return '0.0.0.0'
 	elif platform.system() == 'Darwin':

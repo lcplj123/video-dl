@@ -7,6 +7,7 @@ class Condition:
 	'''
 	def __init__(self,url = None,maxsize='8192M',minsize='1M',datebefore='29990101',dateafter='20000101',maxviews = 9999999999999,minviews = 1,maxduration=86400,minduration=10,makejson=False,verbose=True,sockettimeout=15,downloaddir='.',downloadname='vid',debug=False,force = False):
 		self.url = url #视频下载地址
+		self.source = ''
 		self.maxsize = maxsize #最大尺寸 例如:10M
 		self.minsize = minsize #视频最小尺寸 例如：1M
 		self.datebefore = datebefore #

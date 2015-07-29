@@ -6,6 +6,7 @@ class VideoInfo:
 	def __init__(self,**kwargs):
 		self.url = kwargs.get('url')
 		self.vid = kwargs.get('vid')
+		self.evid = kwargs.get('evid')
 		self.source = kwargs.get('source')
 		self.path = kwargs.get('path')
 		self.server = kwargs.get('server')
@@ -14,9 +15,10 @@ class VideoInfo:
 		self.ext = kwargs.get('ext')
 		self.title = kwargs.get('title')
 		self.desc = kwargs.get('desc')
-		self.tag = kwargs.get('tag')
+		self.tags = kwargs.get('tags')
 		self.uptime = kwargs.get('uptime')
-		self.upuser = kwargs.get('upuser')
+		self.username = kwargs.get('username')
+		self.userid = kwargs.get('userid')
 		self.views = kwargs.get('views')
 		self.category = kwargs.get('category')
 		self.duration = kwargs.get('duration')
@@ -26,6 +28,9 @@ class VideoInfo:
 		self.width = kwargs.get('width')
 		self.vcoding = kwargs.get('vcoding')
 		self.acoding = kwargs.get('acoding')
+		self.m3u8 = kwargs.get('m3u8')
+		self.up = kwargs.get('up')
+		self.down = kwargs.get('down')
 
 	def json(self):
 		'''
