@@ -5,6 +5,8 @@ from define import *
 import urllib.request
 import urllib.parse
 import platform
+import time
+from progressbar import ProgressBar
 
 def get_video_website(url):
 	'''
@@ -80,6 +82,7 @@ basic_header = {
 	'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 	'Accept-Encoding':'gzip,deflate',
 	'Accept-Language':'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+	'Accept-Charset':'UTF-8,*;q=0.5',
 	'Connection':'keep-alive',
 	'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
 }
@@ -93,8 +96,10 @@ def get_html(url):
 		req = urllib.request.Request(url,data = None,headers = basic_header)
 		resp = urllib.request.urlopen(req,timeout = 15)
 	except Exception as e:
+		print('error: get html error! url = %s' % (url,))
 		return ''
 	if resp is None or resp.getcode() != 200:
+		print('error: get html error! errorcode = %d,url = %s' % (resp.getcode(),url,))
 		return ''
 
 	content = resp.read()
@@ -144,7 +149,6 @@ def get_html(url):
 	#print('Pragma ',resp.getheader('Pragma'))
 
 def getIP(ifname = 'eth0'):
-	print(platform.system())
 	if platform.system() == 'Linux':
 		pass
 	#	import socket
@@ -160,9 +164,147 @@ def getIP(ifname = 'eth0'):
 	elif platform.system() == 'Darwin':
 		return '0.0.0.0'
 
+def checkCondition(cls,c):
+	'''
+	检查是否符合下载条件
+	'''
+	if c.minsize[-1] == 'M' or c.minsize[-1] == 'm':
+		cminsize = int(c.minsize[:-1])
+	if c.maxsize[-1] == 'M' or c.maxsize[-1] == 'm':
+		cmaxsize = int(c.maxsize[:-1])
+	fsize = cls.fsize/(1024*1024)
+	if fsize > cmaxsize:
+		return C_SIZE_OVERFLOW
+	if fsize < cminsize:
+		return C_SIZE_SMALL
+
+	if cls.views > c.maxviews:
+		return C_VIEW_OVERFLOW
+	if cls.views < c.minviews:
+		return C_VIEW_SMALL
+
+	if cls.duration > c.maxduration:
+		return C_DURATION_OVERFLOW
+	if cls.duration < c.minduration:
+		return C_DURATION_SMALL
+
+	path = os.path.join(cls.path,cls.fname)
+	if os.path.exists(path):
+		if c.force is True:
+			os.remove(path)
+		else:
+			return C_DUPLICATE_FORCE
+
+	if not cls.uptime:
+		pass
+	if cls.uptime:
+		t = time.strptime(cls.uptime,'%Y%m%d')
+		b = time.strptime(c.datebefore,'%Y%m%d')
+		a = time.strptime(c.dateafter,'%Y%m%d')
+		if t < b:
+			return C_DATE_SMALL
+		if t > a:
+			return C_DATE_OVERFLOW
+
+	return C_PASS
+
+
+def realDownload(flvlist,tmppath,verbose,debug):
+	'''
+	实际的下载行为
+	'''
+	if debug:
+		print('dsuccess:start downloading videos...segs = %d' % (len(flvlist),))
+		#print('dsuccess:flvlist ',flvlist)
+	if verbose:
+		print('success:start downloading videos, please wait. segs = %d' % (len(flvlist),))
+	finishlist = []
+	for flvurl in flvlist:
+		retry = 3 #最多重试3次
+		if not __realDownload(flvurl,tmppath,verbose,debug):
+			if debug:
+				print('derror: flv file download error!')
+			if verbose:
+				print('error: flv file download error!')
+			return False
+	return True
+
+
+def __realDownload(flvurl,tmppath,verbose,debug):
+	'''
+	逐条下载，默认每条最多重试3次
+	'''
+	bar = ProgressBar()
+	name = os.path.basename(flvurl)
+	_name = os.path.join(tmppath,name)
+	resp = None
+	try:
+		resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
+	except Exception as e:
+		if debug:
+			print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
+		if verbose:
+			print('error:request stream error! retry...')
+		return False
+	if resp is None or resp.getcode() != 200:
+		if debug:
+			print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
+		if verbose:
+			print('error:request stream error! retry...')
+		return False
+	length = 0
+	content_length = int(resp.getheader('Content-Length'))*1.0
+	with open(_name,'wb') as f:
+		while True:
+			data = resp.read(1024*1024)
+			if len(data) == 0:
+				bar.done()
+				break
+			f.write(data)
+			length += len(data)
+			bar.update(length/content_length)
+		f.close()
+	return True
+
+def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
+	'''
+	合并视频
+	'''
+	if debug:
+		print('success: all videos download success! start merge videos...')
+	if verbose:
+		print('success: all videos download success! start merge videos...')
+
+	nameList = []
+	for flvurl in flvlist:
+		name = os.path.basename(flvurl)
+		_name = os.path.join(tmppath,name)
+		nameList.append(_name)
+	outputname = os.path.join(path,fname)
+	ext = getExt(flvlist[0])
+	import megre_mp4
+	megre_mp4.concat_mp4(nameList,outputname)
+
+	#if ext == 'mp4': #需要合并的文件是MP4格式
+	#	pass
+	#elif ext in ('flv','f4v'): #需要合并的文件是FLV格式
+	#	pass
+	#elif ext == 'ts': #需要合并的文件是TS格式 也只能合并成ts格式，否则只能转换
+	#	pass
+
+	return True
+
+
+def getExt(path):
+	(filepath,filename) = os.path.split(path)
+	(shortname,extname) = os.path.splitext(filename)
+	return extname
+
+
+
 
 #For test
 #url = b'http://v.ku6.com'
 #get_video_website(url)
 #get_html('http://v.youku.com/v_show/id_XMTI5MzYyOTAyMA==.html')
-getIP()
+#getIP()

@@ -5,7 +5,7 @@ class Condition:
 	'''
 	下载视频对应的条件载体
 	'''
-	def __init__(self,url = None,maxsize='8192M',minsize='1M',datebefore='29990101',dateafter='20000101',maxviews = 9999999999999,minviews = 1,maxduration=86400,minduration=10,makejson=False,verbose=True,sockettimeout=15,downloaddir='.',downloadname='vid',debug=False,force = False):
+	def __init__(self,url = None,maxsize='8192M',minsize='1M',datebefore='29990101',dateafter='20000101',maxviews = 9999999999999,minviews = 1,maxduration=86400,minduration=10,makejson=False,verbose=True,sockettimeout=15,downloaddir='.',downloadname='vid',debug=False,force = False,format = 'mp4'):
 		self.url = url #视频下载地址
 		self.source = ''
 		self.maxsize = maxsize #最大尺寸 例如:10M
@@ -23,6 +23,7 @@ class Condition:
 		self.downloadname = downloadname #下载之后保存的文件名字 vid: 以视频的vid作为名字 title: 以视频的标题作为名字
 		self.debug = debug #是否开启debug模式
 		self.force = force #是否强制覆盖已存在的文件
+		self.format = format
 
 	def json(self):
 		'''

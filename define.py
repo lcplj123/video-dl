@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import os
+#目录定义
+MAIN_DIR = os.path.split(os.path.realpath(__file__))[0]
+
 #website define
 UNSUPPORT = None
 YOUKU = 'youku'
@@ -32,3 +36,15 @@ ZHANQI = 'zhanqi'
 E_URL_NONE = 0
 E_IMPORT_ERROR = 1
 E_DOWNLOAD_SUCCESS = 99
+
+#------------------------
+C_PASS = 0
+C_SIZE_OVERFLOW = 1
+C_SIZE_SMALL = 2
+C_DATE_OVERFLOW = 3
+C_DATE_SMALL = 4
+C_VIEW_OVERFLOW = 5
+C_VIEW_SMALL = 6
+C_DURATION_OVERFLOW = 7
+C_DURATION_SMALL = 8
+C_DUPLICATE_FORCE = 9
