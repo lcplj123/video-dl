@@ -21,22 +21,23 @@ stream_types = [
 {'id':'3gphd','container':'3gp','profile':'3GP高清'},
 ]
 
-class YouKu_Extractor(VideoInfo):
+class YouKu_Extractor():
 	'''
 	youku下载类
 	'''
 	def __init__(self,c):
-		super(YouKu_Extractor,self).__init__()
-		self.c = c
-		self.url = c.url
-		self.ext = c.format
-		self.source = YOUKU
-		self.server = getIP()
+		#super(YouKu_Extractor,self).__init__()
+		self.i = VideoInfo() # i 表示videoinfo
+		self.c = c # c 表示condition
+		self.i.url = c.url
+		self.i.ext = c.format
+		self.i.source = YOUKU
+		self.i.server = getIP()
 		self.stream_id = ''
 		self.stream_size = 0
 		self.stream_segs = []
-		self.path = self._getDownloadDir()
-		tmppath = os.path.join(self.path,'tmp')
+		self.i.path = self._getDownloadDir()
+		tmppath = os.path.join(self.i.path,'tmp')
 		if not os.path.exists(tmppath):
 			os.mkdir(tmppath)
 		self.tmppath = tmppath
@@ -47,28 +48,22 @@ class YouKu_Extractor(VideoInfo):
 		'''
 		self.page = get_html(self.c.url)
 		self.requestVideoInfo()
-		ret = checkCondition(self,self.c)
+		ret = checkCondition(self.i,self.c)
 		if ret == C_PASS: #可以下载
 			#真正下载视频
 			if not realDownload(self.flvlist,self.tmppath,self.c.verbose,self.c.debug):
 				sys.exit(0)
 
-			#合并视频
-			if not mergeVideos(self.flvlist,self.tmppath,self.path,self.fname,self.c.verbose,self.c.debug):
+			#合并视频(并删除临时文件)
+			if not mergeVideos(self.flvlist,self.tmppath,self.i.path,self.i.fname,self.c.verbose,self.c.debug):
 				sys.exit(0)
 
-			#删除临时文件
-			for flvurl in self.flvlist:
-				name = os.path.basename(flvurl)
-				_name = os.path.join(tmppath,name)
-				try:
-					os.remove(_name)
-				except Exception as e:
-					continue
-			if self.debug:
-				print('dsuccess: merge success, download success!')
-			if self.verbose:
-				print('success: video download success. %s' % (self.fname,))
+			#视频大小可能发生变化，重新计算(调用mediainfo获取宽高和码率信息)
+
+			#生产json文件(路径与视频文件的路径一致)
+			jsonFile = os.path.join(self.i.path,self.i.fname+'.json')
+			self.i.jsonToFile(jsonFile)
+
 
 		else: #不能下载
 			if self.c.debug:
@@ -84,9 +79,9 @@ class YouKu_Extractor(VideoInfo):
 		if self.c.verbose:
 			print('start request video info...')
 
-		self.evid = self._getEVid()
-		if not self.evid: sys.exit()
-		url = r'http://v.youku.com/player/getPlayList/VideoIDS/%s/Pf/4/ctype/12/ev/1' % (self.evid,)
+		self.i.evid = self._getEVid()
+		if not self.i.evid: sys.exit()
+		url = r'http://v.youku.com/player/getPlayList/VideoIDS/%s/Pf/4/ctype/12/ev/1' % (self.i.evid,)
 		data = get_html(url)
 		js = json.loads(data)
 		if not js['data']:
@@ -101,17 +96,17 @@ class YouKu_Extractor(VideoInfo):
 			with open('test.json','w',encoding = 'utf8') as f:
 				json.dump(metadata,f)
 
-		self.vid = metadata.get('videoid')
-		self.username = metadata.get('username')
-		self.userid = metadata.get('userid')
-		self.title = metadata.get('title')
-		self.up = metadata.get('up')
-		self.down = metadata.get('down')
-		self.duration = ceil(float(metadata.get('seconds')))
-		self.tags = metadata.get('tags')
-		self.views = self._getViews(self.vid)
-		self.desc = self._getDesc()
-		self.category = self._getCategory()
+		self.i.vid = metadata.get('videoid')
+		self.i.username = metadata.get('username')
+		self.i.userid = metadata.get('userid')
+		self.i.title = metadata.get('title')
+		self.i.up = metadata.get('up')
+		self.i.down = metadata.get('down')
+		self.i.duration = ceil(float(metadata.get('seconds')))
+		self.i.tags = metadata.get('tags')
+		self.i.views = self._getViews(self.i.vid)
+		self.i.desc = self._getDesc()
+		self.i.category = self._getCategory()
 		self.ip = metadata.get('ip')
 		self.ep = metadata.get('ep')
 		self.stream_id, self.stream_size, self.stream_segs = self._getStream(metadata)
@@ -121,21 +116,15 @@ class YouKu_Extractor(VideoInfo):
 			if self.c.verbose:
 				print('error: stream not found!')
 			sys.exit(0)
-		self.fsize = int(self.stream_size)
+		self.i.fsize = int(self.stream_size)
 		if self.c.downloadname == 'title':
-			self.fname = '%s.%s' % (self.title[:32],self.ext)
+			self.i.fname = '%s.%s' % (self.i.title[:32],self.i.ext)
 		else:
-			self.fname = '%s.%s' % (self.evid,self.ext)
+			self.i.fname = '%s.%s' % (self.i.evid,self.i.ext)
 
 		m3u8_url,flvlist = self.m3u8_query()
-		self.m3u8 = m3u8_url
+		self.i.m3u8 = m3u8_url
 		self.flvlist = flvlist
-
-	def postProc(self,flvlist):
-		'''
-		合并视频到一个文件，并转成mp4 格式
-		'''
-		pass
 
 	def _getDownloadDir(self):
 		'''
@@ -146,7 +135,7 @@ class YouKu_Extractor(VideoInfo):
 		if self.c.downloaddir[0] == '.': #相对路径
 			index = 0
 			for ch in self.c.downloaddir:
-				if ch != '/':
+				if ch != '.':
 					break
 				index += 1
 			path = os.path.join(MAIN_DIR,self.c.downloaddir[index:])
@@ -157,7 +146,7 @@ class YouKu_Extractor(VideoInfo):
 				if ch != '/':
 					break
 				index += 1
-			path = self.c.downloaddir[index-1:]
+			path = self.c.downloaddir[index:]
 		else:
 			if self.c.debug:
 				print('derror: downloaddir error! dir = %s' % (self.c.downloaddir,))
@@ -217,7 +206,7 @@ class YouKu_Extractor(VideoInfo):
 		'''
 		查询m3u8
 		'''
-		new_ep,sid,token = self._generate(self.vid,self.ep)
+		new_ep,sid,token = self._generate(self.i.vid,self.ep)
 		if self.c.debug:
 			print('new_ep:',new_ep,'sid:',sid,'token:',token)
 		querydict = dict(
@@ -230,7 +219,7 @@ class YouKu_Extractor(VideoInfo):
 			token = token,
 			ts = int(time.time()),
 			type = self.stream_id,
-			vid = self.vid,
+			vid = self.i.vid,
 		)
 		m3u8_query = get_urlencode(querydict)
 		m3u8_url = r'http://pl.youku.com/playlist/m3u8?%s' % (m3u8_query,)
@@ -242,7 +231,7 @@ class YouKu_Extractor(VideoInfo):
 				f.write(page)
 
 		#从m3u8中解析视频地址
-		flvlist = re.findall(r'(http://[^?]+)\?ts_start=0', page)
+		flvlist = re.findall(r'(http://[^?]+)\.ts\?ts_start=0', page)
 		if len(flvlist) == 0:
 			if self.c.debug:
 				print('derror:failed parse video download path from m3u8 file!')
@@ -261,7 +250,7 @@ class YouKu_Extractor(VideoInfo):
 		'''
 		获取视频描述
 		'''
-		desc = self.title
+		desc = self.i.title
 		pattern = re.compile(r'\<meta\s+name=\"description\"\s+content=\"(.*?)\"')
 		r = pattern.search(self.page)
 		if r:

@@ -24,7 +24,7 @@ if __name__ == '__main__':
 	parser.add_option('-f','--downloadname',action = 'store',type = 'string',dest = 'downloadname',default = 'vid',help = 'how to name the video file. vid and title. default is vid. ')
 	parser.add_option('-d',action = 'store_true',dest = 'debug',default = True,help = 'open debug mode.')
 	parser.add_option('-o',action = 'store_true',dest = 'force',default = False,help = 'overwrite the existing file.default is False.')
-	parser.add_option('-m','--format',action = 'store',type = 'string',dest = 'format',default ='mp4',help = 'output video format.default is mp4,others flv/ts.')
+	parser.add_option('-m','--format',action = 'store',type = 'string',dest = 'format',default ='mp4',help = 'output video format.default is mp4,others mkv/flv.')
 	options,args = parser.parse_args()
 	url = options.__dict__.get('url')
 	c = Condition(**options.__dict__)
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 		if c.debug or c.verbose:
 			print('error: video url is None! exit...')
 		sys.exit(0)
-	if c.format not in ('mp4','ts','flv'):
+	if c.format not in ('mp4',):
 		if c.debug or c.verbose:
 			print('derror: format arg error! exit...')
 		sys.exit(0)

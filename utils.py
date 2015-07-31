@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import uuid
 import gzip
 import zlib
 from define import *
@@ -6,6 +7,7 @@ import urllib.request
 import urllib.parse
 import platform
 import time
+import subprocess
 from progressbar import ProgressBar
 
 def get_video_website(url):
@@ -121,10 +123,9 @@ def get_html(url):
 	else: #默认也是用utf-8解码
 		print('xxxxxxxxxxxxxxxxx 未知编码',charset)
 		content = content.decode('utf-8')
-
-
 	return content
 
+	#以下是resp的一些使用方法,酌情参考！
 	#print('code ',resp.code)
 	#print('getcode ',resp.getcode())
 	#print('geturl ',resp.geturl())
@@ -164,7 +165,7 @@ def getIP(ifname = 'eth0'):
 	elif platform.system() == 'Darwin':
 		return '0.0.0.0'
 
-def checkCondition(cls,c):
+def checkCondition(i,c):
 	'''
 	检查是否符合下载条件
 	'''
@@ -172,33 +173,33 @@ def checkCondition(cls,c):
 		cminsize = int(c.minsize[:-1])
 	if c.maxsize[-1] == 'M' or c.maxsize[-1] == 'm':
 		cmaxsize = int(c.maxsize[:-1])
-	fsize = cls.fsize/(1024*1024)
+	fsize = i.fsize/(1024*1024)
 	if fsize > cmaxsize:
 		return C_SIZE_OVERFLOW
 	if fsize < cminsize:
 		return C_SIZE_SMALL
 
-	if cls.views > c.maxviews:
+	if i.views > c.maxviews:
 		return C_VIEW_OVERFLOW
-	if cls.views < c.minviews:
+	if i.views < c.minviews:
 		return C_VIEW_SMALL
 
-	if cls.duration > c.maxduration:
+	if i.duration > c.maxduration:
 		return C_DURATION_OVERFLOW
-	if cls.duration < c.minduration:
+	if i.duration < c.minduration:
 		return C_DURATION_SMALL
 
-	path = os.path.join(cls.path,cls.fname)
+	path = os.path.join(i.path,i.fname)
 	if os.path.exists(path):
 		if c.force is True:
 			os.remove(path)
 		else:
 			return C_DUPLICATE_FORCE
 
-	if not cls.uptime:
+	if not i.uptime:
 		pass
-	if cls.uptime:
-		t = time.strptime(cls.uptime,'%Y%m%d')
+	if i.uptime:
+		t = time.strptime(i.uptime,'%Y%m%d')
 		b = time.strptime(c.datebefore,'%Y%m%d')
 		a = time.strptime(c.dateafter,'%Y%m%d')
 		if t < b:
@@ -221,12 +222,15 @@ def realDownload(flvlist,tmppath,verbose,debug):
 	finishlist = []
 	for flvurl in flvlist:
 		retry = 3 #最多重试3次
-		if not __realDownload(flvurl,tmppath,verbose,debug):
-			if debug:
-				print('derror: flv file download error!')
-			if verbose:
-				print('error: flv file download error!')
-			return False
+		while retry > 0:
+			if __realDownload(flvurl,tmppath,verbose,debug):
+				break
+			else:
+				retry -= 1
+				if retry == 1:
+					if debug: print('derror: flv file download error!')
+					if verbose: print('error: flv file download error!')
+					return False
 	return True
 
 
@@ -241,22 +245,22 @@ def __realDownload(flvurl,tmppath,verbose,debug):
 	try:
 		resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
 	except Exception as e:
-		if debug:
-			print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
-		if verbose:
-			print('error:request stream error! retry...')
+		if debug: print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
+		if verbose: print('error:request stream error! retry...')
 		return False
 	if resp is None or resp.getcode() != 200:
-		if debug:
-			print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
-		if verbose:
-			print('error:request stream error! retry...')
+		if debug: print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
+		if verbose: print('error:request stream error! retry...')
 		return False
 	length = 0
 	content_length = int(resp.getheader('Content-Length'))*1.0
 	with open(_name,'wb') as f:
 		while True:
-			data = resp.read(1024*1024)
+			try:
+				data = resp.read(1024*1024)
+			except Exception as e:
+				bar.done()
+				return False
 			if len(data) == 0:
 				bar.done()
 				break
@@ -266,42 +270,87 @@ def __realDownload(flvurl,tmppath,verbose,debug):
 		f.close()
 	return True
 
-def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
-	'''
-	合并视频
-	'''
-	if debug:
-		print('success: all videos download success! start merge videos...')
-	if verbose:
-		print('success: all videos download success! start merge videos...')
-
-	nameList = []
-	for flvurl in flvlist:
-		name = os.path.basename(flvurl)
-		_name = os.path.join(tmppath,name)
-		nameList.append(_name)
-	outputname = os.path.join(path,fname)
-	ext = getExt(flvlist[0])
-	import megre_mp4
-	megre_mp4.concat_mp4(nameList,outputname)
-
-	#if ext == 'mp4': #需要合并的文件是MP4格式
-	#	pass
-	#elif ext in ('flv','f4v'): #需要合并的文件是FLV格式
-	#	pass
-	#elif ext == 'ts': #需要合并的文件是TS格式 也只能合并成ts格式，否则只能转换
-	#	pass
-
-	return True
-
-
 def getExt(path):
 	(filepath,filename) = os.path.split(path)
 	(shortname,extname) = os.path.splitext(filename)
 	return extname
 
 
+def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
+	'''
+	合并视频，转成响应的容器类型
+	'''
+	if debug: print('all video segs download, start merge videos...')
+	if verbose: print('all video segs download, start merge videos...')
+	nameList = []
+	for flvurl in flvlist:
+		name = os.path.basename(flvurl)
+		_name = os.path.join(tmppath,name)
+		nameList.append(_name)
+	outputname = os.path.join(path,fname)
+	ext = getExt(flvlist[0])  #形式：'.mp4  or .flv'
+	tmpoutputname = os.path.join(tmppath,uuid.uuid1().hex  + ext)
+	print('nameList = ',nameList)
 
+	#合并视频 & 视频转换
+	if ext in ('.flv','.f4v'):
+		try:
+			from postproc.ffmpeg import has_ffmpeg_installed
+			if has_ffmpeg_installed():
+				from postproc.ffmpeg import ffmpeg_concat_flv_to_mp4
+				ffmpeg_concat_flv_to_mp4(nameList, outputname)
+			else:
+				from postproc.join_flv import concat_flv
+				concat_flv(nameList,outputname + '.flv')
+		except Exception as e:
+			if debug: print('merge videos error! %s' % (e,))
+			if verbose: print('merge videos error!')
+			return False
+
+	elif ext in ('.ts',):
+		try:
+			from postproc.ffmpeg import has_ffmpeg_installed
+			if has_ffmpeg_installed():
+				from postproc.ffmpeg import ffmpeg_concat_ts_to_mp4
+				ffmpeg_concat_ts_to_mp4(nameList,outputname)
+			else:
+				from postproc.join_ts import concat_ts
+				concat_ts(nameList,outputname+'.ts')
+		except Exception as e:
+			if debug: print('merge videos error! %s' % (e,))
+			if verbose: print('merge videos error!')
+			return False
+
+	elif ext in ('.mp4',):
+		try:
+			from postproc.ffmpeg import has_ffmpeg_installed
+			if has_ffmpeg_installed():
+				from postproc.ffmpeg import ffmpeg_concat_mp4_to_mp4
+				ffmpeg_concat_mp4_to_mp4(nameList,outputname)
+			else:
+				from postproc.join_mp4 import concat_mp4
+				concat_mp4(nameList,outputname)
+		except Exception as e:
+			if debug: print('merge videos error! %s' % (e,))
+			if verbose: print('merge videos error!')
+			return False
+	else:
+		if debug: print('unsupport %s merge videos! %s' % (ext,))
+		if debug: print('unsupport %s merge videos! %s' % (ext,))
+		return False
+
+	#删除无用文件
+	for x in nameList:
+		if os.path.exists(x):
+			os.remove(x)
+
+	if os.path.exists(tmpoutputname):
+		os.remove(tmpoutputname)
+
+	if debug: print('*****merge videos success!*****')
+	if verbose: print('*****merge videos success!*****')
+
+	return True
 
 #For test
 #url = b'http://v.ku6.com'
