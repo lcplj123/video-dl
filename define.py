@@ -3,6 +3,7 @@ import os
 #目录定义
 MAIN_DIR = os.path.split(os.path.realpath(__file__))[0]
 
+#----------------------
 #website define
 UNSUPPORT = None
 YOUKU = 'youku'
@@ -31,13 +32,10 @@ TANGDOU = 'tangdou'
 V1 = 'v1'
 WASU = 'wasu'
 ZHANQI = 'zhanqi'
-#-------------------------
-#error define
-E_URL_NONE = 0
-E_IMPORT_ERROR = 1
-E_DOWNLOAD_SUCCESS = 99
+
 
 #------------------------
+#条件检测结果表示
 C_PASS = 0
 C_SIZE_OVERFLOW = 1
 C_SIZE_SMALL = 2

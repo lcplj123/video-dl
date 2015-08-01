@@ -13,17 +13,16 @@ def Dispatcher(c):
 	try:
 		script = __import__(_source, globals(), locals(), [], 0)
 	except Exception as e:
-		if c.debug:
-			print('derror: import %s error! %s' % (_source,e))
-		if c.verbose:
-			print('error: import module %s error! %s' % (source,e))
-		sys.exit()
+		print('error: import module %s error! %s' % (source,e))
+		sys.exit(0)
 
 	if not script:
-		if c.debug:
-			print('derror: import script is None!')
-		if c.verbose:
-			print('error! import script is None!')
-		return
+		print('error: imported script is None! exit...')
+		sys.exit(0)
+
 	executor = getattr(script,source)
+	if not executor:
+		print('error: not find script entrance! exit...')
+		sys.exit(0)
+
 	return executor.download(c)

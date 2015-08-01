@@ -7,7 +7,6 @@ import urllib.request
 import urllib.parse
 import platform
 import time
-import subprocess
 from progressbar import ProgressBar
 
 def get_video_website(url):
@@ -75,7 +74,7 @@ def get_video_website(url):
 
 def get_urlencode(kwargs):
 	'''
-	将传入的参数编码
+	对传入的参数进行url编码
 	'''
 	t = urllib.parse.urlencode(kwargs)
 	return t
@@ -89,13 +88,14 @@ basic_header = {
 	'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
 }
 
-def get_html(url):
+def get_html(url,header = None):
 	'''
-	GET方式获取html,可以添加header，也可以不添加
+	GET方式获取html, 默认添加 basic_header
 	'''
 	resp = None
+	_header = basic_header.update(header) if header else basic_header
 	try:
-		req = urllib.request.Request(url,data = None,headers = basic_header)
+		req = urllib.request.Request(url,data = None,headers = _header)
 		resp = urllib.request.urlopen(req,timeout = 15)
 	except Exception as e:
 		print('error: get html error! url = %s' % (url,))
@@ -107,21 +107,15 @@ def get_html(url):
 	content = resp.read()
 	coding = resp.getheader('Content-Encoding')
 	charset = resp.getheader('Content-Type')
-	#print(coding,charset)
+
 	if coding == 'gzip':
 		content = gzip.decompress(content)
 	elif coding == 'deflate':
 		content = zlib.decompress(content)
-	else:
-		pass
-	if charset.find('UTF8') != -1  or charset.find('UTF-8') != -1:
-		content = content.decode('utf-8')
-	elif charset.find('GB2312') != -1 or charset.find('GBK') != -1:
+
+	if charset.find('GB2312') != -1 or charset.find('GBK') != -1:
 		content = content.decode('gbk')
-	elif charset.find('javascript') != -1:
-		content = content.decode('utf-8')
-	else: #默认也是用utf-8解码
-		print('xxxxxxxxxxxxxxxxx 未知编码',charset)
+	else:  #默认用utf-8解码
 		content = content.decode('utf-8')
 	return content
 
@@ -210,31 +204,25 @@ def checkCondition(i,c):
 	return C_PASS
 
 
-def realDownload(flvlist,tmppath,verbose,debug):
+def realDownload(flvlist,tmppath):
 	'''
 	实际的下载行为
 	'''
-	if debug:
-		print('dsuccess:start downloading videos...segs = %d' % (len(flvlist),))
-		#print('dsuccess:flvlist ',flvlist)
-	if verbose:
-		print('success:start downloading videos, please wait. segs = %d' % (len(flvlist),))
+	print('start downloading videos, please wait. segs = %d' % (len(flvlist),))
 	finishlist = []
 	for flvurl in flvlist:
 		retry = 3 #最多重试3次
 		while retry > 0:
-			if __realDownload(flvurl,tmppath,verbose,debug):
+			if __realDownload(flvurl,tmppath):
 				break
-			else:
-				retry -= 1
-				if retry == 1:
-					if debug: print('derror: flv file download error!')
-					if verbose: print('error: flv file download error!')
-					return False
+			retry -= 1
+			if retry == 0:
+				print('error: flv file download error!')
+				return False
 	return True
 
 
-def __realDownload(flvurl,tmppath,verbose,debug):
+def __realDownload(flvurl,tmppath):
 	'''
 	逐条下载，默认每条最多重试3次
 	'''
@@ -245,12 +233,10 @@ def __realDownload(flvurl,tmppath,verbose,debug):
 	try:
 		resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
 	except Exception as e:
-		if debug: print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
-		if verbose: print('error:request stream error! retry...')
+		print('error: request stream error! retry...')
 		return False
 	if resp is None or resp.getcode() != 200:
-		if debug: print('derror:request stream error! error = %s,url = %s' % (e,flvurl))
-		if verbose: print('error:request stream error! retry...')
+		print('error: request stream error! retry...')
 		return False
 	length = 0
 	content_length = int(resp.getheader('Content-Length'))*1.0
@@ -276,24 +262,24 @@ def getExt(path):
 	return extname
 
 
-def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
+def mergeVideos(flvlist,tmppath,path,fname):
 	'''
-	合并视频，转成响应的容器类型
+	合并视频，转成相应的容器类型
 	'''
-	if debug: print('all video segs download, start merge videos...')
-	if verbose: print('all video segs download, start merge videos...')
+	print('start merge videos...')
 	nameList = []
 	for flvurl in flvlist:
 		name = os.path.basename(flvurl)
 		_name = os.path.join(tmppath,name)
 		nameList.append(_name)
 	outputname = os.path.join(path,fname)
-	ext = getExt(flvlist[0])  #形式：'.mp4  or .flv'
-	tmpoutputname = os.path.join(tmppath,uuid.uuid1().hex  + ext)
+	realext = getExt(outputname)
+	tmpext = getExt(flvlist[0])  #形式：'.mp4  or .flv'
+	tmpoutputname = os.path.join(tmppath,uuid.uuid1().hex  + tmpext)
 	print('nameList = ',nameList)
 
 	#合并视频 & 视频转换
-	if ext in ('.flv','.f4v'):
+	if tmpext in ('.flv','.f4v'):
 		try:
 			from postproc.ffmpeg import has_ffmpeg_installed
 			if has_ffmpeg_installed():
@@ -303,11 +289,10 @@ def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
 				from postproc.join_flv import concat_flv
 				concat_flv(nameList,outputname + '.flv')
 		except Exception as e:
-			if debug: print('merge videos error! %s' % (e,))
-			if verbose: print('merge videos error!')
+			print('merge videos error! %s' % (e,))
 			return False
 
-	elif ext in ('.ts',):
+	elif tmpext in ('.ts',):
 		try:
 			from postproc.ffmpeg import has_ffmpeg_installed
 			if has_ffmpeg_installed():
@@ -317,11 +302,10 @@ def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
 				from postproc.join_ts import concat_ts
 				concat_ts(nameList,outputname+'.ts')
 		except Exception as e:
-			if debug: print('merge videos error! %s' % (e,))
-			if verbose: print('merge videos error!')
+			print('merge videos error! %s' % (e,))
 			return False
 
-	elif ext in ('.mp4',):
+	elif tmpext in ('.mp4',):
 		try:
 			from postproc.ffmpeg import has_ffmpeg_installed
 			if has_ffmpeg_installed():
@@ -331,12 +315,10 @@ def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
 				from postproc.join_mp4 import concat_mp4
 				concat_mp4(nameList,outputname)
 		except Exception as e:
-			if debug: print('merge videos error! %s' % (e,))
-			if verbose: print('merge videos error!')
+			print('merge videos error! %s' % (e,))
 			return False
 	else:
-		if debug: print('unsupport %s merge videos! %s' % (ext,))
-		if debug: print('unsupport %s merge videos! %s' % (ext,))
+		print('unsupport %s merge videos! %s' % (ext,))
 		return False
 
 	#删除无用文件
@@ -347,10 +329,37 @@ def mergeVideos(flvlist,tmppath,path,fname,verbose,debug):
 	if os.path.exists(tmpoutputname):
 		os.remove(tmpoutputname)
 
-	if debug: print('*****merge videos success!*****')
-	if verbose: print('*****merge videos success!*****')
+	print('*****merge videos success!*****')
 
 	return True
+
+
+def getDownloadDir(downloaddir):
+		'''
+		计算下载路径
+		'''
+		path = MAIN_DIR
+
+		if downloaddir[0] == '.': #相对路径
+			index = 0
+			for ch in downloaddir:
+				if ch != '.':
+					break
+				index += 1
+			path = os.path.join(MAIN_DIR,downloaddir[index:])
+
+		elif downloaddir[0] == '/': #绝对路径
+			index = 0
+			for ch in downloaddir:
+				if ch != '/':
+					break
+				index += 1
+			path = downloaddir[index:]
+		else:
+			print('error:downloaddir format error! it must be start with "." or "/" ,exit...')
+			sys.exit(0)
+
+		return path
 
 #For test
 #url = b'http://v.ku6.com'
