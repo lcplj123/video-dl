@@ -85,7 +85,7 @@ basic_header = {
 	'Accept-Language':'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
 	'Accept-Charset':'UTF-8,*;q=0.5',
 	'Connection':'keep-alive',
-	'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
+	#'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
 }
 
 def get_html(url,header = None):
@@ -97,6 +97,7 @@ def get_html(url,header = None):
 	try:
 		req = urllib.request.Request(url,data = None,headers = _header)
 		resp = urllib.request.urlopen(req,timeout = 15)
+		#resp = urllib.request.urlopen(url,data = None, timeout = 15)
 	except Exception as e:
 		print('error: get html error! url = %s' % (url,))
 		return ''
@@ -204,7 +205,7 @@ def checkCondition(i,c):
 	return C_PASS
 
 
-def realDownload(flvlist,tmppath):
+def realDownload(flvlist,tmppath,header = None):
 	'''
 	实际的下载行为
 	'''
@@ -213,7 +214,7 @@ def realDownload(flvlist,tmppath):
 	for flvurl in flvlist:
 		retry = 3 #最多重试3次
 		while retry > 0:
-			if __realDownload(flvurl,tmppath):
+			if __realDownload(flvurl,tmppath,header):
 				break
 			retry -= 1
 			if retry == 0:
@@ -222,21 +223,27 @@ def realDownload(flvlist,tmppath):
 	return True
 
 
-def __realDownload(flvurl,tmppath):
+def __realDownload(flvurl,tmppath,header):
 	'''
 	逐条下载，默认每条最多重试3次
 	'''
 	bar = ProgressBar()
 	name = os.path.basename(flvurl)
+	index = name.find('?')
+	if index != -1:
+		name = name[:index]
 	_name = os.path.join(tmppath,name)
 	resp = None
+	_header = basic_header.update(header) if header else basic_header
 	try:
-		resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
+		req = urllib.request.Request(flvurl,data = None,headers = _header)
+		resp = urllib.request.urlopen(req,timeout = 15)
+		#resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
 	except Exception as e:
-		print('error: request stream error! retry...')
+		print('error: request stream error! retrying...')
 		return False
 	if resp is None or resp.getcode() != 200:
-		print('error: request stream error! retry...')
+		print('error: request stream error! retry....')
 		return False
 	length = 0
 	content_length = int(resp.getheader('Content-Length'))*1.0
@@ -257,6 +264,9 @@ def __realDownload(flvurl,tmppath):
 	return True
 
 def getExt(path):
+	index = path.find('?')
+	if index != -1:
+		path = path[:index]
 	(filepath,filename) = os.path.split(path)
 	(shortname,extname) = os.path.splitext(filename)
 	return extname
@@ -270,6 +280,9 @@ def mergeVideos(flvlist,tmppath,path,fname):
 	nameList = []
 	for flvurl in flvlist:
 		name = os.path.basename(flvurl)
+		index = name.find('?')
+		if index != -1:
+			name = name[:index]
 		_name = os.path.join(tmppath,name)
 		nameList.append(_name)
 	outputname = os.path.join(path,fname)
@@ -318,7 +331,7 @@ def mergeVideos(flvlist,tmppath,path,fname):
 			print('merge videos error! %s' % (e,))
 			return False
 	else:
-		print('unsupport %s merge videos! %s' % (ext,))
+		print('unsupport %s merge videos!' % (tmpext,))
 		return False
 
 	#删除无用文件

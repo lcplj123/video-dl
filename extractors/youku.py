@@ -30,7 +30,7 @@ class YouKuExtractor(BasicExtractor):
 		'''
 		视频下载入口
 		'''
-		print('start downloading ...')
+		print('youku:start downloading ...')
 		retry = 3
 		while retry >=0 :
 			self.page = get_html(self.c.url)
@@ -52,8 +52,7 @@ class YouKuExtractor(BasicExtractor):
 
 		self.vid = metadata.get('videoid')
 		self.i.title = self.getTitle(metadata = metadata)
-		self.i.username = self.getUsername(metadata = metadata)
-		self.i.userid = self.getUserid(metadata = metadata)
+		self.i.username,self.i.userid = self.getUser(metadata = metadata)
 		self.i.duration = self.getDuration(metadata = metadata)
 		self.i.tags = self.getTags(metadata = metadata)
 		self.i.views = self.getViews(vid = self.vid)
@@ -216,13 +215,9 @@ class YouKuExtractor(BasicExtractor):
 		metadata = kwargs['metadata']
 		return metadata.get('tags')
 
-	def getUsername(self,*args,**kwargs):
+	def getUser(self,*args,**kwargs):
 		metadata = kwargs['metadata']
-		return metadata.get('username')
-
-	def getUserid(self,*args,**kwargs):
-		metadata = kwargs['metadata']
-		return int(metadata.get('userid'))
+		return metadata.get('username'),int(metadata.get('userid'))
 
 	def getViews(self,*args,**kwargs):
 		views = 1

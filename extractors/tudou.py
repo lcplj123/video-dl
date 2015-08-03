@@ -6,7 +6,7 @@ sys.path.append('..')
 from define import *
 from utils import *
 from extractor import BasicExtractor
-
+from xml.dom.minidom import parseString
 
 class TuDouExtractor(BasicExtractor):
 	'''
@@ -19,7 +19,7 @@ class TuDouExtractor(BasicExtractor):
 		'''
 		下载入口
 		'''
-		print('start downloading ...')
+		print('tudou:start downloading ...')
 		retry = 3
 		while retry >=0 :
 			self.page = get_html(self.c.url)
@@ -28,6 +28,10 @@ class TuDouExtractor(BasicExtractor):
 		if not self.page:
 			print('error: request video info error,check url. %s' % (self.c.url,))
 			sys.exit(0)
+
+		#For test
+		with open('test.html','w') as f:
+			f.write(self.page)
 
 		pattern = re.compile(r'vcode\s*[:=]\s*\'([^\']+)\'')
 		r = pattern.search(self.page)
@@ -41,18 +45,52 @@ class TuDouExtractor(BasicExtractor):
 			self._download()
 
 	def _download(self):
+		self.iid = self._getIID()
+		self.i.vid = self.iid
+		self.i.title = self.getTitle()
+		self.i.desc = self.getDesc()
+		self.i.tags = self.getTags()
+		self.i.category = self.getCategory()
+		self.i.views = self.getViews()
+		self.i.username,self.i.userid = self.getUser()
 
 		js = None
-		pattern = re.compile(r'segs:\s*\'(\{.*?\})\'')
-		r = pattern.search(self.page)
-		if r:
-			js = json.loads(r.groups()[0])
+
+		url = r'http://www.tudou.com/outplay/goto/getItemSegs.action?iid=%s' % (self.iid,)
+		data = get_html(url)
+		js = json.loads(data)
+		if js and 'status' not in js:
+			pass
 		else:
-			url = r'http://www.tudou.com/outplay/goto/getItemSegs.action?iid=%'
-			data = get_html(url)
+			js = None
+			pattern = re.compile(r'segs:\s*\'(\{.*?\})\'')
+			r = pattern.search(self.page)
+			if r:
+				js = json.loads(r.groups()[0])
 
 		if not js:
 			print('regret: unsupported url. %s' % (self.c.url,))
+			sys.exit(0)
+
+		maxkey = max(js.keys())
+		print(js[maxkey])
+		self.flvlist = self.query_real(js = js[maxkey])
+		self.i.fsize = self.getFsize(js = js[maxkey])
+		self.i.duration = int(self.getDuration(js = js[maxkey]) / 1000)
+		self.i.m3u8 = self.query_m3u8(iid = self.iid,st = maxkey)
+		self.i.fname = self.getFname()
+
+		ret = checkCondition(self.i,self.c)
+		if ret == C_PASS:
+			if not realDownload(self.flvlist,self.tmppath):
+				sys.exit(0)
+			#下载成功，合并视频，并删除临时文件
+			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
+				sys.exit(0)
+
+			self.jsonToFile()
+		else:
+			print('tips: video do not math conditions. code = %d' % (ret,))
 			sys.exit(0)
 
 	def _getIID(self):
@@ -60,26 +98,43 @@ class TuDouExtractor(BasicExtractor):
 		pattern = re.compile(r'iid\s*[:=]\s*(\S+)')
 		r = pattern.search(self.page)
 		if r:
-			print(r)
 			iid = r.groups()[0]
 		return iid
 
-
 	def query_m3u8(self,*args,**kwargs):
-		js = kwargs['js']
-
+		iid = kwargs['iid']
+		st = kwargs['st']
+		m3u8_url = r'http://vr.tudou.com/v2proxy/v2.m3u8?it=%s&st=%s&pw=' % (iid,st)
+		return m3u8_url
 
 	def query_real(self,*args,**kwargs):
-		pass
+		jdata = kwargs['js']
+		vids = [d['k'] for d in jdata]
+		url = r'http://ct.v2.tudou.com/f?id=%s'
+		realurls = [
+		[n.firstChild.nodeValue.strip()
+		for n in parseString(get_html(url%(vid,))).getElementsByTagName('f')
+		][0]
+		for vid in vids
+		]
+		return realurls
 
 	def getVid(self,*args,**kwargs):
 		pass
 
 	def getFsize(self,*args,**kwargs):
-		pass
+		size = 0
+		jdata = kwargs['js']
+		size = sum(d['size'] for d in jdata)
+		return size
 
 	def getFname(self,*args,**kwargs):
-		pass
+		fname = ''
+		if self.c.nametype == 'title':
+			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
+		else:
+			fname = '%s.%s' % (self.i.vid,self.c.ext)
+		return fname
 
 	def getTitle(self,*args,**kwargs):
 		title = ''
@@ -110,14 +165,35 @@ class TuDouExtractor(BasicExtractor):
 			tags = r.groups()[0]
 		return tags.split(' ')
 
-	def getUsername(self,*args,**kwargs):
-		pass
-
-	def getUserid(self,*args,**kwargs):
-		pass
+	def getUser(self,*args,**kwargs):
+		name = ''
+		uid = ''
+		pattern = re.compile(r'onic\:\s*\"(.*?)\"')
+		r = pattern.search(self.page)
+		if r:
+			name = r.groups()[0]
+		pr = re.compile(r'oname\:\s*\"(.*?)\"')
+		m = pr.search(self.page)
+		if m:
+			uid = m.groups()[0]
+		return name,uid
 
 	def getViews(self,*args,**kwargs):
-		pass
+		views = 1
+		url = r'http://index.youku.com/dataapi/getData?num=100011&icode=%s'
+		pattern = re.compile(r'icode\:\s*[\'|\"](.*?)[\'|\"]')
+		r = pattern.search(self.page)
+		if r:
+			icode = r.groups()[0]
+		else:
+			icode = 'xx'
+		jdata = get_html(url%(icode,))
+		js = json.loads(jdata)
+		result = js['result']
+		if result:
+			views = result.get('totalVv')
+
+		return views + 1
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
@@ -128,7 +204,10 @@ class TuDouExtractor(BasicExtractor):
 		return cat
 
 	def getDuration(self,*args,**kwargs):
-		pass
+		duration = 0
+		jdata = kwargs['js']
+		duration = sum(d['seconds'] for d in jdata)
+		return duration
 
 	def getUptime(self,*args,**kwargs):
 		pass
@@ -137,68 +216,3 @@ class TuDouExtractor(BasicExtractor):
 def download(c):
 	d = TuDouExtractor(c)
 	return d.download()
-
-
-
-class TuDou_Extractor():
-	'''
-	土豆下载类
-	'''
-	def __init__(self,c):
-		self.i = VideoInfo() # i 表示videoinfo
-		self.c = c # c 表示condition
-		self.i.url = c.url
-		self.i.ext = c.format
-		self.i.source = TUDOU
-		self.i.server = getIP()
-		self.i.path = getDownloadDir(self.c.downloaddir, self.c.verbose, self.c.debug)
-		tmppath = os.path.join(self.i.path,'tmp')
-		if not os.path.exists(tmppath):
-			os.mkdir(tmppath)
-		self.tmppath = tmppath
-
-	def download(self):
-		'''
-		下载
-		'''
-		self.page = get_html(self.c.url)
-		if not self.page: sys.exit(0)
-		pattern = re.compile(r'vcode\s*[:=]\s*\'([^\']+)\'')
-		r = pattern.search(self.page)
-		if r:
-			print(r)
-			vcode = r.groups()[0]
-			youku_url = r'http://v.youku.com/v_show/id_%s.html' % (vcode,)
-			self.c.url = youku_url
-			from youku import download
-			download(self.c)
-		else:
-			pattern = re.compile(r'segs:\s*\'(\{.*?\})\'')
-			r = pattern.search(self.page)
-			if r:
-				#print(r.groups()[0])
-				js = json.loads(r.groups()[0])
-				self.m3u8 = self.query_m3u8(js)
-			else:
-				if self.c.debug or self.c.verbose:
-					print('sorry: cannot resolve the url... url = %s' % (self.c.url,))
-
-	def query_m3u8(self,segs):
-		'''
-		查询m3u8
-		'''
-		pass
-
-	def download_by_iid(self):
-		pass
-
-	def download_by_listplay(self):
-		pass
-
-	def download_by_programs(self):
-		pass
-
-	def download_by_albumplay(self):
-		pass
-
-

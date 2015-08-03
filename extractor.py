@@ -79,15 +79,9 @@ class BasicExtractor:
 		'''
 		raise NotImplementedError
 
-	def getUsername(self,*args,**kwargs):
+	def getUser(self,*args,**kwargs):
 		'''
-		获取上传用户名
-		'''
-		raise NotImplementedError
-
-	def getUserid(self,*args,**kwargs):
-		'''
-		获取上传用户id
+		获取上传用户名 返回格式： username,userid
 		'''
 		raise NotImplementedError
 

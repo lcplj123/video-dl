@@ -14,7 +14,7 @@ class VideoInfo:
 		self.desc = kwargs.get('desc') #视频描述
 		self.tags = kwargs.get('tags') #视频标签,列表
 		self.username = kwargs.get('username') #上传视频的用户名
-		self.userid = kwargs.get('userid') #上传视频的用户id,数字
+		self.userid = kwargs.get('userid') #上传视频的用户id 字符串
 		self.views = kwargs.get('views',0) #视频被观看次数
 		self.category = kwargs.get('category') #视频类别(文字描述)
 		self.duration = kwargs.get('duration',0) #视频时长
