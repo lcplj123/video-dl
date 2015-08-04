@@ -41,6 +41,8 @@ def get_video_website(url):
 		return HUNANTV
 	elif url.find('56.com') != -1:
 		return WOLE
+	elif url.find('acfun.tv') != -1:
+		return ACFUN
 	elif url.find('fun.tv') != -1:
 		return FUN
 	elif url.find('kankan.com') != -1:
@@ -53,8 +55,6 @@ def get_video_website(url):
 		return BAOMIHUA
 	elif url.find('wasu.cn') != -1:
 		return WASU
-	elif url.find('acfun.tv') != -1:
-		return ACFUN
 	elif url.find('bilibili.com') != -1:
 		return BILIBILI
 	elif url.find('tangdou.com') != -1:
@@ -116,8 +116,14 @@ def get_html(url,header = None):
 
 	if charset.find('GB2312') != -1 or charset.find('GBK') != -1:
 		content = content.decode('gbk')
-	else:  #默认用utf-8解码
-		content = content.decode('utf-8')
+	else:  #默认先尝试用utf8，不行再用gbk
+		try:
+			content = content.decode('utf-8')
+		except Exception as e:
+			try:
+				content = content.decode('GBK')
+			except Exception as e:
+				pass
 	return content
 
 	#以下是resp的一些使用方法,酌情参考！
@@ -197,9 +203,9 @@ def checkCondition(i,c):
 		t = time.strptime(i.uptime,'%Y%m%d')
 		b = time.strptime(c.datebefore,'%Y%m%d')
 		a = time.strptime(c.dateafter,'%Y%m%d')
-		if t < b:
+		if t > b:
 			return C_DATE_SMALL
-		if t > a:
+		if t < a:
 			return C_DATE_OVERFLOW
 
 	return C_PASS

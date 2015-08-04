@@ -24,5 +24,4 @@ def Dispatcher(c):
 	if not executor:
 		print('error: not find script entrance! exit...')
 		sys.exit(0)
-
 	return executor.download(c)
