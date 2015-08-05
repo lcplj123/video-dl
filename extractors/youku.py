@@ -167,9 +167,6 @@ class YouKuExtractor(BasicExtractor):
 		return m3u8_url,flvlist
 
 	def query_real(self,*args,**kwargs):
-		'''
-		获取真实下载地址
-		'''
 		pass
 
 	def getVid(self,*args,**kwargs):
@@ -185,18 +182,7 @@ class YouKuExtractor(BasicExtractor):
 				evid = self.c.url[start+3,end]
 		return evid
 
-	def getFname(self,*args,**kwargs):
-		fname = ''
-		if self.c.nametype == 'title':
-			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
-		else:
-			fname = '%s.%s' % (self.i.vid,self.c.ext)
-		return fname
-
 	def getFsize(self,*args,**kwargs):
-		'''
-		获取视频文件的大小
-		'''
 		pass
 
 	def getTitle(self,*args,**kwargs):
@@ -242,9 +228,6 @@ class YouKuExtractor(BasicExtractor):
 		return ceil(float(metadata.get('seconds')))
 
 	def getUptime(self,*args,**kwargs):
-		'''
-		获取视频上传时间
-		'''
 		raise NotImplementedError
 
 def download(c):

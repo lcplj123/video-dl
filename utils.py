@@ -88,14 +88,14 @@ basic_header = {
 	#'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
 }
 
-def get_html(url,header = None):
+def get_html(url,header = None,data = None):
 	'''
 	GET方式获取html, 默认添加 basic_header
 	'''
 	resp = None
 	_header = basic_header.update(header) if header else basic_header
 	try:
-		req = urllib.request.Request(url,data = None,headers = _header)
+		req = urllib.request.Request(url,data = data,headers = _header)
 		resp = urllib.request.urlopen(req,timeout = 15)
 		#resp = urllib.request.urlopen(url,data = None, timeout = 15)
 	except Exception as e:

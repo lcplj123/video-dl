@@ -91,14 +91,6 @@ class Ku6Extractor(BasicExtractor):
 				return ''
 		return ''
 
-	def getFname(self,*args,**kwargs):
-		fname = ''
-		if self.c.nametype == 'title':
-			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
-		else:
-			fname = '%s.%s' % (self.i.vid,self.c.ext)
-		return fname
-
 	def getFsize(self,*args,**kwargs):
 		size = 0
 		js = kwargs['js']

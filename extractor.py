@@ -52,8 +52,14 @@ class BasicExtractor:
 	def getFname(self,*args,**kwargs):
 		'''
 		获取视频文件的名字
+		此函数调用的前提是title不为空
 		'''
-		raise NotImplementedError
+		fname = ''
+		if self.c.nametype == 'title':
+			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
+		else:
+			fname = '%s.%s' % (self.i.vid,self.c.ext)
+		return fname
 
 	def getFsize(self,*args,**kwargs):
 		'''

@@ -128,14 +128,6 @@ class TuDouExtractor(BasicExtractor):
 		size = sum(d['size'] for d in jdata)
 		return size
 
-	def getFname(self,*args,**kwargs):
-		fname = ''
-		if self.c.nametype == 'title':
-			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
-		else:
-			fname = '%s.%s' % (self.i.vid,self.c.ext)
-		return fname
-
 	def getTitle(self,*args,**kwargs):
 		title = ''
 		pattern = re.compile(r'\<meta\s+name\s*=\s*\"irTitle\"\s+content\s*=\s*\"(.*?)\"')

@@ -67,6 +67,7 @@ class SoHuExtractor(BasicExtractor):
 		self.i.views = self.getViews()
 		self.i.username,self.i.userid = self.getUser()
 		self.flvlist = self.query_real(js = js)
+		self.i.m3u8 = self.query_m3u8()
 
 		ret = checkCondition(self.i,self.c)
 		if ret == C_PASS:
@@ -86,7 +87,7 @@ class SoHuExtractor(BasicExtractor):
 		return json.loads(get_html(url))['url']
 
 	def query_m3u8(self,*args,**kwargs):
-		pass
+		return ''
 
 	def query_real(self,*args,**kwargs):
 		js = kwargs['js']
@@ -110,14 +111,6 @@ class SoHuExtractor(BasicExtractor):
 		if r:
 			vid = r.groups()[0]
 		return vid
-
-	def getFname(self,*args,**kwargs):
-		fname = ''
-		if self.c.nametype == 'title':
-			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
-		else:
-			fname = '%s.%s' % (self.i.vid,self.c.ext)
-		return fname
 
 	def getFsize(self,*args,**kwargs):
 		js = kwargs['js']
