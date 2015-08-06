@@ -52,7 +52,6 @@ class YouKuExtractor(BasicExtractor):
 
 		self.vid = metadata.get('videoid')
 		self.i.title = self.getTitle(metadata = metadata)
-		self.i.username,self.i.userid = self.getUser(metadata = metadata)
 		self.i.duration = self.getDuration(metadata = metadata)
 		self.i.tags = self.getTags(metadata = metadata)
 		self.i.views = self.getViews(vid = self.vid)
@@ -200,10 +199,6 @@ class YouKuExtractor(BasicExtractor):
 	def getTags(self,*args,**kwargs):
 		metadata = kwargs['metadata']
 		return metadata.get('tags')
-
-	def getUser(self,*args,**kwargs):
-		metadata = kwargs['metadata']
-		return metadata.get('username'),int(metadata.get('userid'))
 
 	def getViews(self,*args,**kwargs):
 		views = 1

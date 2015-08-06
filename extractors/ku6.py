@@ -48,7 +48,6 @@ class Ku6Extractor(BasicExtractor):
 		self.i.fsize = self.getFsize(js = js)
 		self.i.fname = self.getFname(js = js)
 		self.i.duration = self.getDuration(js = js)
-		self.i.username,self.i.userid = self.getUser(js = js)
 		self.i.uptime = self.getUptime(js = js)
 		self.i.views = self.getViews()
 		ret = checkCondition(self.i,self.c)
@@ -117,13 +116,6 @@ class Ku6Extractor(BasicExtractor):
 		js = kwargs['js']
 		tag =  js['data']['tag']
 		return tag.split('/')
-
-	def getUser(self,*args,**kwargs):
-		js = kwargs['js']
-		name = ''
-		uid = ''
-		uid = js['data']['u']
-		return name,uid
 
 	def getViews(self,*args,**kwargs):
 		views = 1

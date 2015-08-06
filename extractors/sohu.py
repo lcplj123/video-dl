@@ -65,7 +65,6 @@ class SoHuExtractor(BasicExtractor):
 		self.i.fsize = self.getFsize(js = js)
 		self.i.fname = self.getFname()
 		self.i.views = self.getViews()
-		self.i.username,self.i.userid = self.getUser()
 		self.flvlist = self.query_real(js = js)
 		self.i.m3u8 = self.query_m3u8()
 
@@ -139,9 +138,6 @@ class SoHuExtractor(BasicExtractor):
 		jdata = get_html(url)
 		js = json.loads(jdata[6:-1])
 		return js[str(self.i.vid)]['total'] + 1
-
-	def getUser(self,*args,**kwargs):
-		return '',''
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'

@@ -44,7 +44,6 @@ class QQExtractor(BasicExtractor):
 		r = re.search(r'var\s+VIDEO_INFO\s?=\s?({[^}]+})',self.page)
 		if r:
 			metadict = self._to_dict(r.groups()[0])
-		#print(metadict)
 		self.i.vid = self.getVid(metadict = metadict)
 		if not self.i.vid:
 			print('error: not find vid! exit...')
@@ -55,23 +54,39 @@ class QQExtractor(BasicExtractor):
 		self.i.fname = self.getFname()
 		self.i.desc = self.getDesc()
 		self.i.tags = self.getTags()
-		self.flvlist = self.query_real()
 		self.i.views = self.getViews()
+		self.i.m3u8 = self.query_m3u8()
 		self.i.category = self.getCategory()
-		self.flvlist = self.query_real()
+		self.flvlist,self.i.fsize = self.query_real()
+
+		ret = checkCondition(self.i,self.c)
+		if ret == C_PASS:
+			if not realDownload(self.flvlist,self.tmppath):
+				sys.exit(0)
+			#下载成功，合并视频，并删除临时文件
+			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
+				sys.exit(0)
+
+			self.jsonToFile()
+		else:
+			print('tips: video do not math conditions. code = %d' % (ret,))
+			sys.exit(0)
 
 
 	def query_m3u8(self,*args,**kwargs):
-		pass
+		return ''
 
 	def query_real(self,*args,**kwargs):
 		url = r'http://vv.video.qq.com/geturl?vid=%s&otype=%s&platform=%d&ran=%s&defaultfmt=%s' % (self.i.vid,'json',11,str(random.random()),'fdh')
 		jdata = get_html(url)
 		start = jdata.find('=')
 		js = json.loads(jdata[start+1:-1])
+		#print(js)
+		fsize = 0
+		fsize = js['vd']['vi'][0]['fs']
 		flvlist = []
 		flvlist.append(js['vd']['vi'][0]['url'])
-		return flvlist
+		return flvlist,fsize
 
 	def getVid(self,*args,**kwargs):
 		meta = kwargs['metadict']
@@ -80,7 +95,7 @@ class QQExtractor(BasicExtractor):
 		return vid
 
 	def getFsize(self,*args,**kwargs):
-		pass
+		return 0
 
 	def getTitle(self,*args,**kwargs):
 		meta = kwargs['metadict']
@@ -103,9 +118,6 @@ class QQExtractor(BasicExtractor):
 		if r:
 			tags = r.groups()[0]
 		return tags.split(',')
-
-	def getUser(self,*args,**kwargs):
-		pass
 
 	def getViews(self,*args,**kwargs):
 		views = 1

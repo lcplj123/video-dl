@@ -52,7 +52,6 @@ class TuDouExtractor(BasicExtractor):
 		self.i.tags = self.getTags()
 		self.i.category = self.getCategory()
 		self.i.views = self.getViews()
-		self.i.username,self.i.userid = self.getUser()
 
 		js = None
 
@@ -156,19 +155,6 @@ class TuDouExtractor(BasicExtractor):
 		if r:
 			tags = r.groups()[0]
 		return tags.split(' ')
-
-	def getUser(self,*args,**kwargs):
-		name = ''
-		uid = ''
-		pattern = re.compile(r'onic\:\s*\"(.*?)\"')
-		r = pattern.search(self.page)
-		if r:
-			name = r.groups()[0]
-		pr = re.compile(r'oname\:\s*\"(.*?)\"')
-		m = pr.search(self.page)
-		if m:
-			uid = m.groups()[0]
-		return name,uid
 
 	def getViews(self,*args,**kwargs):
 		views = 1

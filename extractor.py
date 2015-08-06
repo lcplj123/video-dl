@@ -85,12 +85,6 @@ class BasicExtractor:
 		'''
 		raise NotImplementedError
 
-	def getUser(self,*args,**kwargs):
-		'''
-		获取上传用户名 返回格式： username,userid
-		'''
-		raise NotImplementedError
-
 	def getViews(self,*args,**kwargs):
 		'''
 		获取视频的观看次数
