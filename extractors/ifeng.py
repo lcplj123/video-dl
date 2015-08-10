@@ -6,6 +6,7 @@ sys.path.append('..')
 from define import *
 from utils import *
 from extractor import BasicExtractor
+from xml.dom import minidom
 
 class IFengExtractor(BasicExtractor):
 	'''
@@ -30,24 +31,54 @@ class IFengExtractor(BasicExtractor):
 			print('error: not find vid! exit...')
 			sys.exit(0)
 
+		self.flvlist = self.query_real()
 		self.i.title = self.getTitle()
 		self.i.fname = self.getFname()
+		self.i.fsize = self.getFsize()
 		self.i.tags = self.getTags()
 		self.i.desc = self.getDesc()
 		self.i.duration = self.getDuration()
 		self.i.views = self.getViews()
-		self.flvlist = self.query_real()
+		self.i.uptime = self.getUptime()
+		self.i.m3u8 = self.query_m3u8()
+
+		ret = checkCondition(self.i,self.c)
+		if ret == C_PASS:
+			if not realDownload(self.flvlist,self.tmppath):
+				sys.exit(0)
+			#下载成功，合并视频，并删除临时文件
+			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
+				sys.exit(0)
+
+			self.jsonToFile()
+		else:
+			print('tips: video do not math conditions. code = %d' % (ret,))
+			sys.exit(0)
 
 
 	def query_m3u8(self,*args,**kwargs):
-		pass
+		return ''
 
 	def query_real(self,*args,**kwargs):
+		flvlist = []
 		ids = self.i.vid
 		url = 'http://v.ifeng.com/video_info_new/%s/%s/%s.xml' % (ids[-2], ids[-2:], ids)
 		xml = get_html(url)
+		self.xml = xml
+		node = minidom.parseString(self.xml)
 		print(xml)
-		return []
+		item = node.getElementsByTagName('item')[0]
+		playurl = item.attributes['VideoPlayUrl'].value
+		if playurl:
+			flvlist.append(playurl)
+		else:
+			nodelist = node.getElementsByTagName('partsH')
+			if not nodelist:
+				nodelist = node.getElementsByTagName('parts')
+			for node in nodelist:
+				t = node.attributes['playurl']
+				flvlist.append(t.value)
+		return [flv.replace(' ','') for flv in flvlist]
 
 	def getVid(self,*args,**kwargs):
 		vid = ''
@@ -69,13 +100,17 @@ class IFengExtractor(BasicExtractor):
 		return fname
 
 	def getFsize(self,*args,**kwargs):
-		pass
+		return 2048*1024
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
 		r = re.search(r'\<meta\s+name=\"irCategory\"\s+content=\"(.*?)\"',self.page)
 		if r:
 			cat = r.groups()[0]
+		else:
+			node = minidom.parseString(self.xml)
+			item = node.getElementsByTagName('item')[0]
+			cat = item.attributes['CategoryName'].value
 		return cat
 
 	def getDesc(self,*args,**kwargs):
@@ -92,6 +127,10 @@ class IFengExtractor(BasicExtractor):
 		r = re.search(r'\<meta\s+name=\"keywords\"\s+content=\"(.*?)\"',self.page)
 		if r:
 			tags = r.groups()[0]
+		else:
+			node = minidom.parseString(self.xml)
+			item = node.getElementsByTagName('item')[0]
+			tags = item.attributes['Keyword'].value
 		return tags.split(',')
 
 	def getViews(self,*args,**kwargs):
@@ -103,6 +142,10 @@ class IFengExtractor(BasicExtractor):
 		r = re.search(r'\<meta\s+name=\"irTitle\"\s+content=\"(.*?)\"',self.page)
 		if r:
 			title = r.groups()[0]
+		else:
+			node = minidom.parseString(self.xml)
+			item = node.getElementsByTagName('item')[0]
+			title = item.attributes['Name'].value
 		return title
 
 	def getDuration(self,*args,**kwargs):
@@ -110,10 +153,20 @@ class IFengExtractor(BasicExtractor):
 		r = re.search(r'\"duration\"\s*:\s*\"([0-9.]+)\"',self.page)
 		if r:
 			t = r.groups()[0]
+		if int(t) == 0:
+			node = minidom.parseString(self.xml)
+			item = node.getElementsByTagName('item')[0]
+			t = item.attributes['Duration'].value
 		return int(t)
 
 	def getUptime(self,*args,**kwargs):
-		pass
+		node = minidom.parseString(self.xml)
+		item = node.getElementsByTagName('item')[0]
+		t = item.attributes['CreateDate'].value
+		x,_ = t.split(' ')
+		a,b,c = x.split('-')
+		return '%s%s%s' % (a,b,c)
+
 
 
 def download(c):
