@@ -51,13 +51,14 @@ class IQiYiExtractor(BasicExtractor):
 		assert info['code'] == 'A000000'
 		self.i.title = self.getTitle(info = info)
 		self.i.desc = self.getDesc(info = info)
+		self.i.fname = self.getFname()
 		self.i.uptime = self.getUptime(info = info)
 		self.i.tags = self.getTags(info = info)
 
 		if info['data']['vp']['tkl'] == '':
 			print('sorry, do not support iqiyi vip videos!exit...')
 			sys.exit(0)
-		print(info)
+		#print(info)
 		bid = 0
 		stream = {}
 		vs = info['data']['vp']['tkl'][0]['vs']
@@ -69,10 +70,21 @@ class IQiYiExtractor(BasicExtractor):
 		#print(stream)
 		self.i.duration = self.getDuration(stream = stream)
 		self.i.m3u8 = self.query_m3u8(stream = stream,vs = vs)
-		self.i.flvlist = self.query_real(stream = stream)
+		self.flvlist,self.i.fsize = self.query_real(stream = stream,du = info['data']['vp']['du'],gen_uid = gen_uid)
+		self.i.views = self.getViews(tvid = self.tvid)
 
+		ret = checkCondition(self.i,self.c)
+		if ret == C_PASS:
+			if not realDownload(self.flvlist,self.tmppath):
+				sys.exit(0)
+			#下载成功，合并视频，并删除临时文件
+			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
+				sys.exit(0)
 
-
+			self.jsonToFile()
+		else:
+			print('tips: video do not math conditions. code = %d' % (ret,))
+			sys.exit(0)
 
 	def _getVMS(self,tvid,vid,gen_uid):
 		#tm ->the flash run time for md5 usage
@@ -110,6 +122,8 @@ class IQiYiExtractor(BasicExtractor):
 
 	def query_real(self,*args,**kwargs):
 		stream = kwargs['stream']
+		du = kwargs['du']
+		gen_uid = kwargs['gen_uid']
 		video_links = stream['fs'] #now in i["flvs"] not in i["fs"]
 		if not stream['fs'][0]['l'].startswith('/'):
 			tmp = self._getVrsEncodeCode(stream['fs'][0]['l'])
@@ -124,10 +138,11 @@ class IQiYiExtractor(BasicExtractor):
 				vlink=self._getVrsEncodeCode(vlink)
 			key = self._getDispathKey(vlink.split("/")[-1].split(".")[0])
 			size += i['b']
-			#baseurl=info["data"]["vp"]["du"].split("/")
-			#baseurl.insert(-1,key)
-			#url="/".join(baseurl)+vlink+'?su='+gen_uid+'&qyid='+uuid4().hex+'&client=&z=&bt=&ct=&tn='+str(randint(10000,20000))
-			#urls.append(json.loads(get_html(url))["l"])
+			baseurl=du.split("/")
+			baseurl.insert(-1,key)
+			url="/".join(baseurl)+vlink+'?su='+gen_uid+'&qyid='+uuid4().hex+'&client=&z=&bt=&ct=&tn='+str(randint(10000,20000))
+			urls.append(json.loads(get_html(url))["l"])
+
 		return urls,size
 
 
@@ -184,13 +199,16 @@ class IQiYiExtractor(BasicExtractor):
 		tag = info['data']['vi']['keyword']
 		return tag.split(',')
 
-
 	def getViews(self,*args,**kwargs):
-		pass
+		tvid = kwargs['tvid']
+		url = r'http://cache.video.qiyi.com/jp/pc/%s/' % (tvid,)
+		data = get_html(url)
+		r = re.search(r'\[\{\"\d+\":(\d+)\}\]',data)
+		v = r.groups()[0]
+		return int(v) if v else 1
 
 	def getCategory(self,*args,**kwargs):
 		info = kwargs['info']
-
 
 	def getDuration(self,*args,**kwargs):
 		stream = kwargs['stream']
