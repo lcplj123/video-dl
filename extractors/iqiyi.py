@@ -58,7 +58,7 @@ class IQiYiExtractor(BasicExtractor):
 		if info['data']['vp']['tkl'] == '':
 			print('sorry, do not support iqiyi vip videos!exit...')
 			sys.exit(0)
-		#print(info)
+		print(info)
 		bid = 0
 		stream = {}
 		vs = info['data']['vp']['tkl'][0]['vs']
@@ -217,6 +217,7 @@ class IQiYiExtractor(BasicExtractor):
 	def getUptime(self,*args,**kwargs):
 		info = kwargs['info']
 		t = info['data']['vi']['pubTime']
+		if not t: return ''
 		ltime = time.localtime(int(t[:-3]))
 		tstr = time.strftime('%Y%m%d',ltime)
 		return tstr
