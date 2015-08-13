@@ -33,7 +33,8 @@ class CNTVExtractor(BasicExtractor):
 		url = r'http://vdn.apps.cntv.cn/api/getHttpVideoInfo.do?pid=%s'
 		jdata = get_html(url % (self.i.vid,))
 		js = json.loads(jdata)
-		if js.get('ack','no') == 'no':
+		#print(js)
+		if js.get('ack','no') == 'no' and self.branch != 'xiyou':
 			print('cntv: error vid %s,exit...' % (self.i.vid,))
 			sys.exit(0)
 
@@ -41,7 +42,7 @@ class CNTVExtractor(BasicExtractor):
 		if self.branch == 'xiyou':
 			xiyou_url = r'http://xiyou.cntv.cn/interface/index?videoId=%s'
 			xiyou_js = json.loads(get_html(xiyou_url % (self.i.vid,)))
-
+		#print(xiyou_js)
 		self.i.title = self.getTitle(js = js,xiyou_js = xiyou_js)
 		self.i.m3u8 = self.query_m3u8(js = js,xiyou_js = xiyou_js)
 		self.i.duration = self.getDuration(js = js,xiyou_js = xiyou_js)
@@ -52,7 +53,7 @@ class CNTVExtractor(BasicExtractor):
 		self.i.views = self.getViews(js = js,xiyou_js = xiyou_js)
 		self.i.category = self.getCategory(js = js,xiyou_js = xiyou_js)
 		self.i.uptime = self.getUptime(js = js, xiyou_js = xiyou_js)
-		self.flvlist = self.query_real(js = js)
+		self.flvlist = self.query_real(js = js,xiyou_js = xiyou_js)
 
 		ret = checkCondition(self.i,self.c)
 		if ret == C_PASS:
@@ -71,20 +72,41 @@ class CNTVExtractor(BasicExtractor):
 	def query_m3u8(self,*args,**kwargs):
 		m3u8 = ''
 		js = kwargs['js']
-		m3u8 = js.get('hls_url','')
+		xiyou_js = kwargs['xiyou_js']
+		if self.branch == 'xiyou':
+			pass
+		else:
+			m3u8 = js.get('hls_url','')
 		return m3u8
 
 	def query_real(self,*args,**kwargs):
 		urls = []
 		js = kwargs['js']
-		video  = js['video']
-		ch = 'chapters'
-		for i in ('5','4','3','2',''):
-			ch = 'chapters%s' % (i,)
-			if ch in video: break
-		chapterlist = video[ch]
-		for d in chapterlist:
-			urls.append(d['url'])
+		xiyou_js = kwargs['xiyou_js']
+		if self.branch == 'xiyou':
+			hdx = ('videoFilePathSHD','videoFilePathHD','videoFilePath')
+			videopath = xiyou_js['data'][0]['videoList'][0]
+			for hd in hdx:
+				if hd in videopath:
+					path = videopath[hd]
+					x,y = path.split('#')
+					zlist = y.split('_')
+					for i in range(1,len(zlist)+1):
+						url = '%s_%03d.mp4' % (x,i)
+						urls.append(url)
+					break
+		else:
+			video  = js['video']
+			ch = 'chapters'
+			for i in ('5','4','3','2',''):
+				ch = 'chapters%s' % (i,)
+				if ch in video: break
+			chapterlist = video.get(ch,[])
+			if not chapterlist:
+				chapterlist = video.get('lowChapters',[])
+			for d in chapterlist:
+				urls.append(d['url'])
+		#print(urls)
 		return urls
 
 	def getVid(self,*args,**kwargs):
@@ -99,6 +121,10 @@ class CNTVExtractor(BasicExtractor):
 			r = re.search(r'\<!--repaste\.video\.code\.begin--\>(\w+)\<!--repaste\.video\.code\.end--\>',self.page)
 			if r:
 				vid = r.groups()[0]
+			else:
+				r2 = re.search(r'videoCenterId\s*:\s+[\'\"](.*?)[\'\"]',self.page)
+				if r2:
+					vid = r2.groups()[0]
 		return vid
 
 	def getFsize(self,*args,**kwargs):
@@ -116,7 +142,7 @@ class CNTVExtractor(BasicExtractor):
 		js = kwargs['js']
 		title = ''
 		if self.branch == 'xiyou':
-			title = xiyou_js['data']['title']
+			title = xiyou_js['data'][0]['title']
 		else:
 			title = js['title']
 		if title: return title
@@ -131,7 +157,7 @@ class CNTVExtractor(BasicExtractor):
 		xiyou_js = kwargs['xiyou_js']
 		js = kwargs['js']
 		if self.branch == 'xiyou':
-			desc = xiyou_js['data']['videoDetailInfo']
+			desc = xiyou_js['data'][0]['videoDetailInfo']
 			return desc
 		else:
 			pass
@@ -146,7 +172,7 @@ class CNTVExtractor(BasicExtractor):
 		js = kwargs['js']
 		xiyou_js = kwargs['xiyou_js']
 		if self.branch == 'xiyou':
-			tags = xiyou_js['data']['videoTags']
+			tags = xiyou_js['data'][0]['videoTags']
 			return tags.split(',')
 		else:
 			pass
@@ -160,18 +186,18 @@ class CNTVExtractor(BasicExtractor):
 		js = kwargs['js']
 		xiyou_js = kwargs['xiyou_js']
 		if self.branch == 'xiyou':
-			views = xiyou_js['data']['playCount']
+			views = xiyou_js['data'][0]['playCount']
+			views = views.replace(',','')
 			return int(views)
 		else:
-			pass
-		r = re.search(r'',self.page)
+			return views
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
 		js = kwargs['js']
 		xiyou_js = kwargs['xiyou_js']
 		if self.branch == 'xiyou':
-			cat = xiyou_js['data']['categoryName']
+			cat = xiyou_js['data'][0]['categoryName']
 			return cat
 		else:
 			pass
@@ -182,20 +208,20 @@ class CNTVExtractor(BasicExtractor):
 		js = kwargs['js']
 		xiyou_js = kwargs['xiyou_js']
 		if self.branch == 'xiyou':
-			duration = xiyou_js['data']['timeSpan']
-			x,y = duration.split('.')
-			return int(x)+1 if y != '00' else int(x)
+			duration = xiyou_js['data'][0]['timeSpan']
+			x = duration.split('.')
+			return int(x[0])
 		else:
 			t = js['video']['totalLength']
-			x,y = t.split('.')
-			return int(x)+1 if y != '00' else int(x)
+			x = t.split('.')
+			return int(x[0])
 
 	def getUptime(self,*args,**kwargs):
 		t = ''
 		js = kwargs['js']
 		xiyou_js = kwargs['xiyou_js']
 		if self.branch == 'xiyou':
-			t = xiyou_js['data']['uploadTime']
+			t = xiyou_js['data'][0]['uploadTime']
 		else:
 			t = js['f_pgmtime'].split(' ')[0]
 		return t.replace('-','')
