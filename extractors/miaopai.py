@@ -10,7 +10,7 @@ from extractor import BasicExtractor
 
 class MiaoPaiExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	秒拍视频下载器
 	'''
 	def __init__(self,c):
 		super(MiaoPaiExtractor,self).__init__(c, MIAOPAI)

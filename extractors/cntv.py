@@ -9,7 +9,7 @@ from extractor import BasicExtractor
 
 class CNTVExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	CNTV视频下载器
 	'''
 	def __init__(self,c):
 		super(CNTVExtractor,self).__init__(c, CNTV)

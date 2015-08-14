@@ -12,7 +12,7 @@ RATE_LIST = (1500,799,450,299)
 
 class Ku6Extractor(BasicExtractor):
 	'''
-	ku6下载器
+	ku6视频下载器
 	'''
 	def __init__(self,c):
 		super(Ku6Extractor,self).__init__(c, KU6)

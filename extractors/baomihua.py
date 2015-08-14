@@ -10,7 +10,7 @@ import urllib.parse
 
 class BaoMiHuaExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	爆米花视频下载器
 	'''
 	def __init__(self,c):
 		super(BaoMiHuaExtractor,self).__init__(c, BAOMIHUA)

@@ -9,7 +9,7 @@ from extractor import BasicExtractor
 
 class XXXExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	XXX视频下载器
 	'''
 	def __init__(self,c):
 		super(XXXExtractor,self).__init__(c, XXX)

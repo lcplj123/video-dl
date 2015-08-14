@@ -11,7 +11,7 @@ from extractor import BasicExtractor
 
 class SoHuExtractor(BasicExtractor):
 	'''
-	sohu 下载器
+	搜狐视频下载器
 	'''
 	def __init__(self,c):
 		super(SoHuExtractor,self).__init__(c, SOHU)

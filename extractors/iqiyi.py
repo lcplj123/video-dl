@@ -25,7 +25,7 @@ import time
 
 class IQiYiExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	爱奇艺视频下载器
 	'''
 	def __init__(self,c):
 		super(IQiYiExtractor,self).__init__(c, IQIYI)
