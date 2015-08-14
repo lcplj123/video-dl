@@ -36,27 +36,15 @@ class BaoMiHuaExtractor(BasicExtractor):
 		info = '&%s&' % (urllib.parse.unquote_plus(html),)
 		self.i.title = self.getTitle(info = info)
 		self.i.desc = self.getDesc(info = info)
-		self.i.tags = self.getTags(info = info)
+		self.i.keywords = self.getKeywords(info = info)
 		self.i.m3u8 = self.query_m3u8(info = info)
 		self.i.fsize = self.getFsize(info = info)
 		self.i.fname = self.getFname()
 		self.flvlist = self.query_real(info = info)
-		self.i.views = self.getViews()
 		self.i.uptime = self.getUptime(info = info)
 		self.i.category = self.getCategory(info = info)
 		self.i.duration = self.getDuration(info = info)
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 	def query_m3u8(self,*args,**kwargs):
 		m3u8 = ''
@@ -119,25 +107,12 @@ class BaoMiHuaExtractor(BasicExtractor):
 			desc = r.groups()[0]
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		tag = ''
 		r = re.search(r'\<meta\s+content=\"(.*?)\"\s+name=\"keywords\"',self.page)
 		if r:
 			tag = r.groups()[0]
 		return tag.split(',')
-
-	def getViews(self,*args,**kwargs):
-		views = 1
-		r = re.search(r'var\s+appId\s*=\s*(\d+)\s*;',self.page)
-		appid = '0'
-		if r:
-			appid = r.groups()[0]
-		url = r'http://action.interface.baomihua.com/AppInfoApi.asmx/GetAppInfo?appid=%s' %(appid,)
-		data = get_html(url)
-		r = re.search(r'appPlayCount:\s*[\'\"](\d+)[\'\"]',data)
-		if r:
-			views = r.groups()[0]
-		return int(views)
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
@@ -152,7 +127,7 @@ class BaoMiHuaExtractor(BasicExtractor):
 		return int(duration)
 
 	def getUptime(self,*args,**kwargs):
-		return '20150813'
+		return INITIAL_UPTIME
 
 
 def download(c):

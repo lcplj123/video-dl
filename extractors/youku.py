@@ -53,8 +53,7 @@ class YouKuExtractor(BasicExtractor):
 		self.vid = metadata.get('videoid')
 		self.i.title = self.getTitle(metadata = metadata)
 		self.i.duration = self.getDuration(metadata = metadata)
-		self.i.tags = self.getTags(metadata = metadata)
-		self.i.views = self.getViews(vid = self.vid)
+		self.i.keywords = self.getKeywords(metadata = metadata)
 		self.i.desc = self.getDesc(title = self.i.title)
 		self.i.category = self.getCategory()
 		self.i.fname = self.getFname()
@@ -63,19 +62,7 @@ class YouKuExtractor(BasicExtractor):
 		self.stream_id, self.stream_size, self.stream_segs = self._getStream(metadata)
 		self.i.fsize = int(self.stream_size)
 		self.i.m3u8,self.flvlist = self.query_m3u8()
-
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 	def _getVideoJson(self):
 		url = r'http://v.youku.com/player/getPlayList/VideoIDS/%s/Pf/4/ctype/12/ev/1' % (self.i.vid,)
@@ -84,8 +71,8 @@ class YouKuExtractor(BasicExtractor):
 		if not js['data']: return
 		metadata = js['data'][0]
 		#For test
-		with open('test.json','w',encoding = 'utf8') as f:
-			json.dump(metadata,f)
+		#with open('test.json','w',encoding = 'utf8') as f:
+		#	json.dump(metadata,f)
 		return metadata
 
 	def _generate(self,vid,ep):
@@ -182,7 +169,7 @@ class YouKuExtractor(BasicExtractor):
 		return evid
 
 	def getFsize(self,*args,**kwargs):
-		pass
+		return 1024*1024
 
 	def getTitle(self,*args,**kwargs):
 		metadata = kwargs['metadata']
@@ -196,19 +183,9 @@ class YouKuExtractor(BasicExtractor):
 			desc = r.groups()[0]
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		metadata = kwargs['metadata']
 		return metadata.get('tags')
-
-	def getViews(self,*args,**kwargs):
-		views = 1
-		vid = kwargs['vid']
-		if not vid: return views
-		VIEW_URL = r'http://v.youku.com/QVideo/~ajax/getVideoPlayInfo?id=%s&type=vv' % (vid,)
-		data = get_html(VIEW_URL)
-		js = json.loads(data)
-		views = js.get('vv',1)
-		return views
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
@@ -223,7 +200,7 @@ class YouKuExtractor(BasicExtractor):
 		return ceil(float(metadata.get('seconds')))
 
 	def getUptime(self,*args,**kwargs):
-		raise NotImplementedError
+		return INITIAL_UPTIME
 
 def download(c):
 	d = YouKuExtractor(c)

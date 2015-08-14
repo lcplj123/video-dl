@@ -59,27 +59,14 @@ class SoHuExtractor(BasicExtractor):
 
 		self.i.title = self.getTitle(js = js)
 		self.i.desc = self.getDesc()
-		self.i.tags = self.getTags(js = js)
+		self.i.keywords = self.getKeywords(js = js)
 		self.i.duration = self.getDuration(js = js)
 		self.i.category = self.getCategory(js = js)
 		self.i.fsize = self.getFsize(js = js)
 		self.i.fname = self.getFname()
-		self.i.views = self.getViews()
 		self.flvlist = self.query_real(js = js)
 		self.i.m3u8 = self.query_m3u8()
-
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 	def _real_url(self,host,vid,tvid,new,clipURL,ck):
 		url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())
@@ -127,17 +114,10 @@ class SoHuExtractor(BasicExtractor):
 			desc = r.groups()[0]
 		return desc
 
-
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		js = kwargs['js']
 		kw = js['keyword']
 		return kw.split(';')
-
-	def getViews(self,*args,**kwargs):
-		url = r'http://count.vrs.sohu.com/count/queryext.action?vids=%s' % (self.i.vid,)
-		jdata = get_html(url)
-		js = json.loads(jdata[6:-1])
-		return js[str(self.i.vid)]['total'] + 1
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
@@ -150,7 +130,7 @@ class SoHuExtractor(BasicExtractor):
 		return int(js['data']['totalDuration'])
 
 	def getUptime(self,*args,**kwargs):
-		pass
+		return INITIAL_UPTIME
 
 def download(c):
 	d = SoHuExtractor(c)

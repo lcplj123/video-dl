@@ -43,25 +43,13 @@ class Ku6Extractor(BasicExtractor):
 
 		self.flvlist = self.query_real(js = js)
 		self.i.title = self.getTitle(js = js)
-		self.i.tags = self.getTags(js = js)
+		self.i.keywords = self.getKeywords(js = js)
 		self.i.desc = self.getDesc(js = js)
 		self.i.fsize = self.getFsize(js = js)
 		self.i.fname = self.getFname(js = js)
 		self.i.duration = self.getDuration(js = js)
 		self.i.uptime = self.getUptime(js = js)
-		self.i.views = self.getViews()
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 
 	def query_m3u8(self,*args,**kwargs):
@@ -111,15 +99,11 @@ class Ku6Extractor(BasicExtractor):
 		desc = js['data']['desc']
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		tag = ''
 		js = kwargs['js']
 		tag =  js['data']['tag']
 		return tag.split('/')
-
-	def getViews(self,*args,**kwargs):
-		views = 1
-		return views
 
 	def getCategory(self,*args,**kwargs):
 		pass
@@ -136,7 +120,7 @@ class Ku6Extractor(BasicExtractor):
 		js = kwargs['js']
 		t = int(js['data']['uploadtime'])
 		localt = time.localtime(t)
-		return time.strftime('%Y%m%d',localt)
+		return int(time.strftime('%Y%m%d',localt))
 
 
 def download(c):

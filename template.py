@@ -7,15 +7,15 @@ from define import *
 from utils import *
 from extractor import BasicExtractor
 
-class Ku6Extractor(BasicExtractor):
+class XXXExtractor(BasicExtractor):
 	'''
 	ku6下载器
 	'''
 	def __init__(self,c):
-		super(Ku6Extractor,self).__init__(c, KU6)
+		super(XXXExtractor,self).__init__(c, XXX)
 
 	def download(self):
-		print('ku6:start downloading ...')
+		print('XXX:start downloading ...')
 		retry = 3
 		while retry >=0 :
 			self.page = get_html(self.c.url)
@@ -30,6 +30,18 @@ class Ku6Extractor(BasicExtractor):
 			print('error: not find vid! exit...')
 			sys.exit(0)
 
+		#metadata = ...
+		self.i.title = self.getTitle(...)
+		self.i.desc = self.getDesc()
+		self.i.keywords = self.getKeywords()
+		self.i.fname = self.getFname()
+		self.i.fsize = self.getFsize()
+		self.i.duration = self.getDuration()
+		self.i.category = self.getCategory()
+		self.i.uptime = self.getUptime()
+		self.i.m3u8 = self.query_m3u8()
+		self.flvlist = self.query_real()
+		self.realdown()
 
 	def query_m3u8(self,*args,**kwargs):
 		pass
@@ -49,10 +61,7 @@ class Ku6Extractor(BasicExtractor):
 	def getDesc(self,*args,**kwargs):
 		pass
 
-	def getTags(self,*args,**kwargs):
-		pass
-
-	def getViews(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		pass
 
 	def getCategory(self,*args,**kwargs):
@@ -66,5 +75,5 @@ class Ku6Extractor(BasicExtractor):
 
 
 def download(c):
-	d = Ku6Extractor(c)
+	d = XXXExtractor(c)
 	return d.download()

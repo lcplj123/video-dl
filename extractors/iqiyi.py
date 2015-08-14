@@ -31,7 +31,7 @@ class IQiYiExtractor(BasicExtractor):
 		super(IQiYiExtractor,self).__init__(c, IQIYI)
 
 	def download(self):
-		print('ku6:start downloading ...')
+		print('iqiyi:start downloading ...')
 		retry = 3
 		while retry >=0 :
 			self.page = get_html(self.c.url)
@@ -53,12 +53,12 @@ class IQiYiExtractor(BasicExtractor):
 		self.i.desc = self.getDesc(info = info)
 		self.i.fname = self.getFname()
 		self.i.uptime = self.getUptime(info = info)
-		self.i.tags = self.getTags(info = info)
+		self.i.keywords = self.getKeywords(info = info)
 
 		if info['data']['vp']['tkl'] == '':
 			print('sorry, do not support iqiyi vip videos!exit...')
 			sys.exit(0)
-		print(info)
+		#print(info)
 		bid = 0
 		stream = {}
 		vs = info['data']['vp']['tkl'][0]['vs']
@@ -71,20 +71,8 @@ class IQiYiExtractor(BasicExtractor):
 		self.i.duration = self.getDuration(stream = stream)
 		self.i.m3u8 = self.query_m3u8(stream = stream,vs = vs)
 		self.flvlist,self.i.fsize = self.query_real(stream = stream,du = info['data']['vp']['du'],gen_uid = gen_uid)
-		self.i.views = self.getViews(tvid = self.tvid)
+		self.realdown()
 
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
 
 	def _getVMS(self,tvid,vid,gen_uid):
 		#tm ->the flash run time for md5 usage
@@ -194,18 +182,10 @@ class IQiYiExtractor(BasicExtractor):
 		desc = info['data']['vi']['info']
 		return desc if desc else self.i.title
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		info = kwargs['info']
 		tag = info['data']['vi']['keyword']
 		return tag.split(',')
-
-	def getViews(self,*args,**kwargs):
-		tvid = kwargs['tvid']
-		url = r'http://cache.video.qiyi.com/jp/pc/%s/' % (tvid,)
-		data = get_html(url)
-		r = re.search(r'\[\{\"\d+\":(\d+)\}\]',data)
-		v = r.groups()[0]
-		return int(v) if v else 1
 
 	def getCategory(self,*args,**kwargs):
 		info = kwargs['info']
@@ -217,10 +197,10 @@ class IQiYiExtractor(BasicExtractor):
 	def getUptime(self,*args,**kwargs):
 		info = kwargs['info']
 		t = info['data']['vi']['pubTime']
-		if not t: return ''
+		if not t: return INITIAL_UPTIME
 		ltime = time.localtime(int(t[:-3]))
 		tstr = time.strftime('%Y%m%d',ltime)
-		return tstr
+		return int(tstr)
 
 
 def download(c):

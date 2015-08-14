@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 from utils import *
 from videoinfo import VideoInfo
 
@@ -15,6 +16,7 @@ class BasicExtractor:
 		self.i.path = getDownloadDir(c.downloaddir)
 		self.i.server = getIP()
 		self.tmppath = self.mktmp()
+		self.flvlist = [] #视频真实下载地址列表
 
 	def mktmp(self):
 		'''
@@ -30,6 +32,23 @@ class BasicExtractor:
 		视频下载入口
 		'''
 		raise NotImplementedError
+
+	def realdown(self):
+		'''
+		实际的下载行为
+		'''
+		ret = checkCondition(self.i,self.c)
+		if ret == C_PASS:
+			if not realDownload(self.flvlist,self.tmppath):
+				sys.exit(0)
+			#下载成功，合并视频，并删除临时文件
+			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
+				sys.exit(0)
+
+			self.jsonToFile()
+		else:
+			print('tips: video do not math conditions. code = %d,exit...' % (ret,))
+			sys.exit(0)
 
 	def query_m3u8(self,*args,**kwargs):
 		'''
@@ -79,15 +98,9 @@ class BasicExtractor:
 		'''
 		raise NotImplementedError
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		'''
 		获取视频标签
-		'''
-		raise NotImplementedError
-
-	def getViews(self,*args,**kwargs):
-		'''
-		获取视频的观看次数
 		'''
 		raise NotImplementedError
 

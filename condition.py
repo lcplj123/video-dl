@@ -5,15 +5,13 @@ class Condition:
 	'''
 	下载视频对应的条件载体
 	'''
-	def __init__(self,url = None,maxsize='8192M',minsize='1M',datebefore='29990101',dateafter='20000101',maxviews = 9999999999999,minviews = 1,maxduration=86400,minduration=10,makejson=False,sockettimeout=15,downloaddir='.',nametype='vid',force = False,ext = 'mp4'):
+	def __init__(self,url = None,maxsize='8192M',minsize='1M',datebefore='29990101',dateafter='20000101',maxduration=86400,minduration=10,makejson=False,sockettimeout=15,downloaddir='.',nametype='vid',force = False,ext = 'mp4'):
 		self.url = url #视频下载地址
 		self.source = ''
 		self.maxsize = maxsize #最大尺寸 例如:10M
 		self.minsize = minsize #视频最小尺寸 例如：1M
 		self.datebefore = datebefore #
 		self.dateafter = dateafter
-		self.maxviews = maxviews
-		self.minviews = minviews
 		self.maxduration = maxduration #视频最大播放时长
 		self.minduration = minduration #视频最小播放时长
 		self.makejson = makejson #是否生成json文件

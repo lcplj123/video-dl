@@ -53,24 +53,11 @@ class QQExtractor(BasicExtractor):
 		self.i.title = self.getTitle(metadict = metadict)
 		self.i.fname = self.getFname()
 		self.i.desc = self.getDesc()
-		self.i.tags = self.getTags()
-		self.i.views = self.getViews()
+		self.i.keywords = self.getKeywords()
 		self.i.m3u8 = self.query_m3u8()
 		self.i.category = self.getCategory()
 		self.flvlist,self.i.fsize = self.query_real()
-
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 
 	def query_m3u8(self,*args,**kwargs):
@@ -111,17 +98,13 @@ class QQExtractor(BasicExtractor):
 			desc = r.groups()[0]
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		tags = ''
 		pattern = re.compile(r'\<meta\s+name=\"keywords\"\s+itemprop=\"keywords\"\s+content=\"(.*?)\"\s*/\>')
 		r = pattern.search(self.page)
 		if r:
 			tags = r.groups()[0]
 		return tags.split(',')
-
-	def getViews(self,*args,**kwargs):
-		views = 1
-		return views
 
 	def getCategory(self,*args,**kwargs):
 		p1 = re.compile(r'target=\"_blanl\"\s+class=\"path_category\"\s+title=\"(.*?)\"')
@@ -142,7 +125,7 @@ class QQExtractor(BasicExtractor):
 		return int(t)
 
 	def getUptime(self,*args,**kwargs):
-		pass
+		return INITIAL_UPTIME
 
 	def _to_dict(self,json_object):
 		class global_dict(dict):

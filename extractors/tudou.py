@@ -30,8 +30,8 @@ class TuDouExtractor(BasicExtractor):
 			sys.exit(0)
 
 		#For test
-		with open('test.html','w') as f:
-			f.write(self.page)
+		#with open('test.html','w') as f:
+		#	f.write(self.page)
 
 		pattern = re.compile(r'vcode\s*[:=]\s*\'([^\']+)\'')
 		r = pattern.search(self.page)
@@ -49,9 +49,8 @@ class TuDouExtractor(BasicExtractor):
 		self.i.vid = self.iid
 		self.i.title = self.getTitle()
 		self.i.desc = self.getDesc()
-		self.i.tags = self.getTags()
+		self.i.keywords = self.getKeywords()
 		self.i.category = self.getCategory()
-		self.i.views = self.getViews()
 
 		js = None
 
@@ -78,19 +77,7 @@ class TuDouExtractor(BasicExtractor):
 		self.i.duration = int(self.getDuration(js = js[maxkey]) / 1000)
 		self.i.m3u8 = self.query_m3u8(iid = self.iid,st = maxkey)
 		self.i.fname = self.getFname()
-
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
+		self.realdown()
 
 	def _getIID(self):
 		iid = ''
@@ -156,23 +143,6 @@ class TuDouExtractor(BasicExtractor):
 			tags = r.groups()[0]
 		return tags.split(' ')
 
-	def getViews(self,*args,**kwargs):
-		views = 1
-		url = r'http://index.youku.com/dataapi/getData?num=100011&icode=%s'
-		pattern = re.compile(r'icode\:\s*[\'|\"](.*?)[\'|\"]')
-		r = pattern.search(self.page)
-		if r:
-			icode = r.groups()[0]
-		else:
-			icode = 'xx'
-		jdata = get_html(url%(icode,))
-		js = json.loads(jdata)
-		result = js['result']
-		if result:
-			views = result.get('totalVv')
-
-		return views + 1
-
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
 		pattern = re.compile(r'\<meta\s+name\s*=\s*\"irCategory\"\s+content\s*=\s*\"(.*?)\"')
@@ -188,7 +158,7 @@ class TuDouExtractor(BasicExtractor):
 		return duration
 
 	def getUptime(self,*args,**kwargs):
-		pass
+		return INITIAL_UPTIME
 
 
 def download(c):

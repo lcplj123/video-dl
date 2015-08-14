@@ -32,7 +32,7 @@ class AcFunExtractor(BasicExtractor):
 
 		self.i.title = self.getTitle()
 		self.i.desc = self.getDesc()
-		self.i.tags = self.getTags()
+		self.i.keywords = self.getKeywords()
 		self.i.username,self.i.userid = self.getUser()
 		self.i.uptime = self.getUptime()
 		self.i.fname = self.getFname()
@@ -88,7 +88,7 @@ class AcFunExtractor(BasicExtractor):
 			desc = desc.replace('<br/>',' ')
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		tags = ''
 		pattern = re.compile(r'data-tags\s*=\s*\"(.*?)\"')
 		r = pattern.search(self.page)
@@ -107,13 +107,6 @@ class AcFunExtractor(BasicExtractor):
 		if r2:
 			name = r2.groups()[0]
 		return name,uid
-
-	def getViews(self,*args,**kwargs):
-		view = 1
-		r = re.search(r'data-views\s*=\s*\"(.*?)\"',self.page)
-		if r:
-			view = r.groups()[0]
-		return int(view)+1
 
 	def getCategory(self,*args,**kwargs):
 		pass

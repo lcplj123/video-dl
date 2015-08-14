@@ -180,11 +180,6 @@ def checkCondition(i,c):
 	if fsize < cminsize:
 		return C_SIZE_SMALL
 
-	if i.views > c.maxviews:
-		return C_VIEW_OVERFLOW
-	if i.views < c.minviews:
-		return C_VIEW_SMALL
-
 	if i.duration > c.maxduration:
 		return C_DURATION_OVERFLOW
 	if i.duration < c.minduration:
@@ -197,10 +192,8 @@ def checkCondition(i,c):
 		else:
 			return C_DUPLICATE_FORCE
 
-	if not i.uptime:
-		pass
-	if i.uptime:
-		t = time.strptime(i.uptime,'%Y%m%d')
+	if i.uptime != INITIAL_UPTIME: #(uptime 整型 格式 20150102)
+		t = time.strptime(str(i.uptime),'%Y%m%d')
 		b = time.strptime(c.datebefore,'%Y%m%d')
 		a = time.strptime(c.dateafter,'%Y%m%d')
 		if t > b:
@@ -295,7 +288,6 @@ def mergeVideos(flvlist,tmppath,path,fname):
 	realext = getExt(outputname)
 	tmpext = getExt(flvlist[0])  #形式：'.mp4  or .flv'
 	tmpoutputname = os.path.join(tmppath,uuid.uuid1().hex  + tmpext)
-	print('nameList = ',nameList)
 
 	#合并视频 & 视频转换
 	if tmpext in ('.flv','.f4v'):
@@ -354,31 +346,31 @@ def mergeVideos(flvlist,tmppath,path,fname):
 
 
 def getDownloadDir(downloaddir):
-		'''
-		计算下载路径
-		'''
-		path = MAIN_DIR
+	'''
+	计算下载路径
+	'''
+	path = MAIN_DIR
 
-		if downloaddir[0] == '.': #相对路径
-			index = 0
-			for ch in downloaddir:
-				if ch != '.':
-					break
-				index += 1
-			path = os.path.join(MAIN_DIR,downloaddir[index:])
+	if downloaddir[0] == '.': #相对路径
+		index = 0
+		for ch in downloaddir:
+			if ch != '.':
+				break
+			index += 1
+		path = os.path.join(MAIN_DIR,downloaddir[index:])
 
-		elif downloaddir[0] == '/': #绝对路径
-			index = 0
-			for ch in downloaddir:
-				if ch != '/':
-					break
-				index += 1
-			path = downloaddir[index:]
-		else:
-			print('error:downloaddir format error! it must be start with "." or "/" ,exit...')
-			sys.exit(0)
+	elif downloaddir[0] == '/': #绝对路径
+		index = 0
+		for ch in downloaddir:
+			if ch != '/':
+				break
+			index += 1
+		path = downloaddir[index:]
+	else:
+		print('error:downloaddir format error! it must be start with "." or "/" ,exit...')
+		sys.exit(0)
 
-		return path
+	return path
 
 #For test
 #url = b'http://v.ku6.com'

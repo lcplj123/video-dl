@@ -35,26 +35,12 @@ class IFengExtractor(BasicExtractor):
 		self.i.title = self.getTitle()
 		self.i.fname = self.getFname()
 		self.i.fsize = self.getFsize()
-		self.i.tags = self.getTags()
+		self.i.keywords = self.getKeywords()
 		self.i.desc = self.getDesc()
 		self.i.duration = self.getDuration()
-		self.i.views = self.getViews()
 		self.i.uptime = self.getUptime()
 		self.i.m3u8 = self.query_m3u8()
-
-		ret = checkCondition(self.i,self.c)
-		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
-				sys.exit(0)
-			#下载成功，合并视频，并删除临时文件
-			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):
-				sys.exit(0)
-
-			self.jsonToFile()
-		else:
-			print('tips: video do not math conditions. code = %d' % (ret,))
-			sys.exit(0)
-
+		self.realdown()
 
 	def query_m3u8(self,*args,**kwargs):
 		return ''
@@ -66,7 +52,7 @@ class IFengExtractor(BasicExtractor):
 		xml = get_html(url)
 		self.xml = xml
 		node = minidom.parseString(self.xml)
-		print(xml)
+		#print(xml)
 		item = node.getElementsByTagName('item')[0]
 		playurl = item.attributes['VideoPlayUrl'].value
 		if playurl:
@@ -91,14 +77,6 @@ class IFengExtractor(BasicExtractor):
 				vid = r2.groups()[0]
 		return vid
 
-	def getFname(self,*args,**kwargs):
-		fname = ''
-		if self.c.nametype == 'title':
-			fname = '%s.%s' % (self.i.title[:32],self.c.ext)
-		else:
-			fname = '%s.%s' % (self.i.vid,self.c.ext)
-		return fname
-
 	def getFsize(self,*args,**kwargs):
 		return 2048*1024
 
@@ -122,7 +100,7 @@ class IFengExtractor(BasicExtractor):
 			desc = self.i.title
 		return desc
 
-	def getTags(self,*args,**kwargs):
+	def getKeywords(self,*args,**kwargs):
 		tags = ''
 		r = re.search(r'\<meta\s+name=\"keywords\"\s+content=\"(.*?)\"',self.page)
 		if r:
@@ -165,7 +143,8 @@ class IFengExtractor(BasicExtractor):
 		t = item.attributes['CreateDate'].value
 		x,_ = t.split(' ')
 		a,b,c = x.split('-')
-		return '%s%s%s' % (a,b,c)
+		r = '%s%s%s' % (a,b,c)
+		return int(r)
 
 
 
