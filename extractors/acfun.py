@@ -9,7 +9,7 @@ from extractor import BasicExtractor
 
 class AcFunExtractor(BasicExtractor):
 	'''
-	ku6下载器
+	acfun视频下载器
 	'''
 	def __init__(self,c):
 		super(AcFunExtractor,self).__init__(c, ACFUN)
