@@ -116,13 +116,13 @@ class SoHuExtractor(BasicExtractor):
 
 	def getKeywords(self,*args,**kwargs):
 		js = kwargs['js']
-		kw = js['keyword']
+		kw = js['data']['keyword']
 		return kw.split(';')
 
 	def getCategory(self,*args,**kwargs):
 		cat = '未知'
 		js = kwargs['js']
-		cat = js['caname']
+		cat = js['data'].get('caname','未知')
 		return cat
 
 	def getDuration(self,*args,**kwargs):
