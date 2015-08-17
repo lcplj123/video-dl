@@ -87,7 +87,7 @@ class IQiYiExtractor(BasicExtractor):
 
 	def _mix(self,tvid):
 		enc = []
-		enc.append('65096542539c4e529c8ee97511cd979f')
+		enc.append('3601ba290e4f4662848c710e2122007e')
 		tm = str(randint(2000,4000))
 		src = 'eknas'
 		enc.append(str(tm))
