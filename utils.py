@@ -106,8 +106,8 @@ def get_html(url,header = None,data = None):
 		return ''
 
 	content = resp.read()
-	coding = resp.getheader('Content-Encoding')
-	charset = resp.getheader('Content-Type')
+	coding = resp.getheader('Content-Encoding','')
+	charset = resp.getheader('Content-Type','')
 
 	if coding == 'gzip':
 		content = gzip.decompress(content)
