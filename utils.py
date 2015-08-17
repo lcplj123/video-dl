@@ -290,7 +290,7 @@ def mergeVideos(flvlist,tmppath,path,fname):
 	tmpoutputname = os.path.join(tmppath,uuid.uuid1().hex  + tmpext)
 
 	#合并视频 & 视频转换
-	if tmpext in ('.flv','.f4v'):
+	if tmpext in ('.flv','.f4v','.hlv'):
 		try:
 			from postproc.ffmpeg import has_ffmpeg_installed
 			if has_ffmpeg_installed():
