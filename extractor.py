@@ -33,13 +33,13 @@ class BasicExtractor:
 		'''
 		raise NotImplementedError
 
-	def realdown(self):
+	def realdown(self,header = None):
 		'''
 		实际的下载行为
 		'''
 		ret = checkCondition(self.i,self.c)
 		if ret == C_PASS:
-			if not realDownload(self.flvlist,self.tmppath):
+			if not realDownload(self.flvlist,self.tmppath,header):
 				sys.exit(0)
 			#下载成功，合并视频，并删除临时文件
 			if not mergeVideos(self.flvlist, self.tmppath, self.i.path, self.i.fname):

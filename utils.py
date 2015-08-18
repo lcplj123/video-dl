@@ -7,6 +7,7 @@ import urllib.request
 import urllib.parse
 import platform
 import time
+from copy import deepcopy
 from progressbar import ProgressBar
 
 def get_video_website(url):
@@ -85,21 +86,28 @@ basic_header = {
 	'Accept-Language':'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
 	'Accept-Charset':'UTF-8,*;q=0.5',
 	'Connection':'keep-alive',
-	#'User-Agent':'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:39.0) Gecko/20100101 Firefox/39.0',
+	#'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0',
 }
+
+def get_header(header):
+	if header:
+		_header = deepcopy(basic_header)
+		_header.update(header)
+	else:
+		_header = basic_header
+	return _header
 
 def get_html(url,header = None,data = None):
 	'''
 	GET方式获取html, 默认添加 basic_header
 	'''
 	resp = None
-	_header = basic_header.update(header) if header else basic_header
+	_header = get_header(header)
 	try:
 		req = urllib.request.Request(url,data = data,headers = _header)
 		resp = urllib.request.urlopen(req,timeout = 15)
-		#resp = urllib.request.urlopen(url,data = None, timeout = 15)
 	except Exception as e:
-		print('error: get html error! url = %s' % (url,))
+		print('error: get html error! url = %s, error = %s' % (url,e))
 		return ''
 	if resp is None or resp.getcode() != 200:
 		print('error: get html error! errorcode = %d,url = %s' % (resp.getcode(),url,))
@@ -233,11 +241,10 @@ def __realDownload(flvurl,tmppath,header):
 		name = name[:index]
 	_name = os.path.join(tmppath,name)
 	resp = None
-	_header = basic_header.update(header) if header else basic_header
+	_header = get_header(header)
 	try:
 		req = urllib.request.Request(flvurl,data = None,headers = _header)
 		resp = urllib.request.urlopen(req,timeout = 15)
-		#resp = urllib.request.urlopen(flvurl,data = None,timeout = 15)
 	except Exception as e:
 		print('error: request stream error! retrying...')
 		return False
