@@ -20,7 +20,7 @@ class SinaExtractor(BasicExtractor):
 	def download(self):
 		print('sina:start downloading ...')
 		retry = 3
-		while retry >=0 :
+		while retry > 0 :
 			self.page = get_html(self.c.url)
 			if self.page: break
 			retry -= 1

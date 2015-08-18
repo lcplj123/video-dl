@@ -19,8 +19,8 @@ class HunanExtractor(BasicExtractor):
 	def download(self):
 		print('mango:start downloading ...')
 		retry = 3
-		while retry >=0 :
-			self.page = get_html(self.c.url,header = {'Referer':'http://www.hunantv.com/'})
+		while retry > 0 :
+			self.page = get_html(self.c.url,header = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:40.0) Gecko/20100101 Firefox/40.0'})
 			if self.page: break
 			retry -= 1
 		if not self.page:
@@ -45,7 +45,7 @@ class HunanExtractor(BasicExtractor):
 		self.i.keywords = self.getKeywords()
 		self.i.fname = self.getFname()
 		self.i.fsize = self.getFsize()
-		self.i.duration = self.getDuration()
+		self.i.duration = self.getDuration(jdata = jdata['data'])
 		self.i.category = self.getCategory(jdata = jdata['data'])
 		self.i.uptime = self.getUptime()
 		self.i.m3u8 = self.query_m3u8()
