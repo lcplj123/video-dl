@@ -82,7 +82,7 @@ class IQiYiExtractor(BasicExtractor):
 		#TODO: support password protected video
 		tm,sc,src = self._mix(tvid)
 		vmsreq = 'http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7&tvId=%s&vid=%s&vinfo=1\
-		&tm=%s&enc=%s&qyid=%s&tn=%s&um=0&authkey=%s' % (tvid,vid,tm,sc,gen_uid,str(random()),hashlib.new('md5',bytes(''+str(tm)+tvid,'utf-8')).hexdigest())
+		&tm=%s&enc=%s&qyid=%s&tn=%s&um=1&authkey=%s' % (tvid,vid,tm,sc,gen_uid,str(random()),hashlib.new('md5',bytes(''+str(tm)+tvid,'utf-8')).hexdigest())
 		return json.loads(get_html(vmsreq))
 
 	def _mix(self,tvid):
