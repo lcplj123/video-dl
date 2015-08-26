@@ -70,6 +70,8 @@ def get_video_website(url):
 		return CNTV
 	elif url.find('blip.tv') != -1:
 		return BLIP
+	elif url.find('yinyuetai.com') != -1:
+		return YINYUETAI
 	else:
 		return UNSUPPORT
 

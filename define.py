@@ -33,6 +33,7 @@ TANGDOU = 'tangdou'
 V1 = 'v1'
 WASU = 'wasu'
 ZHANQI = 'zhanqi'
+YINYUETAI = 'yinyuetai'
 
 
 #------------------------
