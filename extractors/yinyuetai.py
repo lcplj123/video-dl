@@ -31,8 +31,6 @@ class YinYueTaiExtractor(BasicExtractor):
 			print('error: not find vid! exit...')
 			sys.exit(0)
 
-		metadata = get_html('http://www.yinyuetai.com/insite/get-video-info?flex=true&videoId=' + self.i.vid)
-
 		self.i.title = self.getTitle()
 		self.i.desc = self.getDesc()
 		self.i.keywords = self.getKeywords()
@@ -46,10 +44,18 @@ class YinYueTaiExtractor(BasicExtractor):
 		self.realdown()
 
 	def query_m3u8(self,*args,**kwargs):
-		pass
+		return ''
 
 	def query_real(self,*args,**kwargs):
-		pass
+		urls = []
+		htm = get_html('http://www.yinyuetai.com/insite/get-video-info?flex=true&videoId=' + self.i.vid)
+		#print(str(htm))
+		for quality in ('he\w*', 'hd\w*', 'hc\w*', '\w+'):
+			r = re.search(r'(http://' + quality + '\.yinyuetai\.com/uploads/videos/common/\w+\.(?:flv|mp4)\?(?:sc=[a-f0-9]{16}|v=\d{12}))', str(htm))
+			if r:
+				urls.append(r.groups()[0])
+				break
+		return urls
 
 	def getVid(self,*args,**kwargs):
 		vid = ''
@@ -59,25 +65,38 @@ class YinYueTaiExtractor(BasicExtractor):
 		return vid
 
 	def getFsize(self,*args,**kwargs):
-		pass
+		return 1024*1024
 
 	def getTitle(self,*args,**kwargs):
-		pass
+		title = ''
+		r = re.search(r'<meta property="og:title"\s+content="([^"]+)"/>',self.page)
+		if r:
+			title = r.groups()[0]
+		return title
 
 	def getDesc(self,*args,**kwargs):
-		pass
+		desc = self.i.title
+		r = re.search(r'<meta property="og:description"\s+content="([^"]+)"/>',self.page)
+		if r:
+			desc = r.groups()[0]
+		return desc
 
 	def getKeywords(self,*args,**kwargs):
-		pass
+		keywords = ''
+		r = re.search(r'<meta property="og:keywords"\s+content="([^"]+)"/>',self.page)
+		if r:
+			keywords = r.groups()[0]
+		return keywords.split(',')
 
 	def getCategory(self,*args,**kwargs):
-		pass
+		cat = '未知'
+		return cat
 
 	def getDuration(self,*args,**kwargs):
-		pass
+		return 60
 
 	def getUptime(self,*args,**kwargs):
-		pass
+		return INITIAL_UPTIME
 
 
 def download(c):
